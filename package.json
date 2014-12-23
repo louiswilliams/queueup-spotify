@@ -1,0 +1,16 @@
+{
+  "name": "QueuepServer",
+  "description": "Servers a client with current state of a playlist",
+  "version": "0.0.1",
+  "private": "true",
+  "dependencies": {
+    "express": "4.7.2",
+    "body-parser": "1.5.2",
+    "jade": "1.5.0",
+    "morgan": "1.2.2",
+    "mongodb": "1.4.7",
+    "monk": "0.9.0",
+    "spotify-web-api-node": "0.0.11",
+    "debug": "*.*"
+  }
+}

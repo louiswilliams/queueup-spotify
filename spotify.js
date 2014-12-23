@@ -1,0 +1,5 @@
+function searchTracks(query, callback) {
+
+
+}
+

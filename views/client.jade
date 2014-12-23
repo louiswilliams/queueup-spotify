@@ -1,0 +1,16 @@
+extends layout
+
+block content
+  script(src="/javascripts/client.js")
+  h1= client.name
+  h2#status
+    a#statusChange(href="#", data-id=client.key, data-status=client.status)= client.status
+  h2
+    a#next(href="#", data-id=client.key) Next Track
+  h2#current= current
+  ol#queue
+    each track, i in queue
+      li#track= track.track
+  #search
+    input(type="text", id="searchbox")
+  #searchresults
