@@ -1,15 +1,14 @@
-var $volume, $play_pause, $current, $current_name, $current_artist, $queue, $background;
-var volInhibitKnobListiner = false;
-var volInhibitServerListener = false;
 
 $(document).ready(function() {
-  $volume = $("#volume");
-  $background = $("#background");
-  $play_pause = $("#statusChange");
-  $queue = $("#queue");
-  $current = $("#current");
-  $current_name = $("#current_name");
-  $current_artist = $("#current_artist");
+  var $volume = $("#volume");
+  var $background = $("#background");
+  var $play_pause = $("#statusChange");
+  var $queue = $("#queue");
+  var $current = $("#current");
+  var $current_name = $("#current_name");
+  var $current_artist = $("#current_artist");
+  var volInhibitKnobListiner = false;
+  var volInhibitServerListener = false;
 
   /* Play/pause button pressed */
   $play_pause.click(function(e) {
@@ -65,7 +64,6 @@ $(document).ready(function() {
   /* Create knob */
   $volume.knob({
     'release': setVolume,
-    'change': knobChange,
     'width': 250,
     'height': 250,
     'angleArc': 270,
@@ -77,9 +75,11 @@ $(document).ready(function() {
   });
 
   /* Search box keyup */
-  var searchAjax; 
-  $("#searchbox > input").keyup(function(e) {
-    var query = this.value;
+  var searchAjax;
+  var search_offset = 0;
+  var search_query = "";
+
+  function searchTracks(query) {
     $results = $("#searchresults");
     if (query.length > 0) {
 
@@ -87,20 +87,26 @@ $(document).ready(function() {
       /* This cancels any slow and unfinished operations */
       if (searchAjax) { searchAjax.abort(); }
 
-      searchAjax = $.ajax("/spotify/search/" + query);
+      searchAjax = $.ajax("/spotify/search/" + query + "/" + search_offset);
       searchAjax.done(function(data) {
+        if (data.error) {
+          console.log(data);
+          return;
+        }
         var resultsHtml = "";
         console.log(data);
+        resultsHtml += "<a class='search_prev fa fa-angle-double-up' href='#'></a>"
         $.each(data, function(i, track) {
           resultsHtml += "<a class='track' data-id='" + i + "' "
             + "href='" + document.URL + "/add/" + track.id + "'>"
             + "<div class='albumart'><img src='" + track.album.images[2].url + "'/></div>"
             + "<div class='trackname'>" + track.name + "</div>"
             + "<div class='artistname'>" + track.artist + "</div>"
-            + "</a>";
+            + "</a>"
         });
-        $results.slideDown(100);
+        resultsHtml += "<a class='search_next fa fa-angle-double-down' href='#'></a>"
         $results.html(resultsHtml);
+        $results.slideDown(100);
       });
       searchAjax.fail(function(data) {
         console.log("Fail: ", data);
@@ -108,6 +114,28 @@ $(document).ready(function() {
     } else {
       clearSearch();
     }
+  }
+
+  $("#searchresults").on("click", ".search_prev", function(e) {
+    e.preventDefault();
+    if (search_offset >= 5) {
+      search_offset -= 5;    
+    }
+    searchTracks(search_query);
+  });
+
+  $("#searchresults").on("click", ".search_next", function(e) {
+    e.preventDefault();
+    if (search_offset <= 15) {
+      search_offset += 5;      
+    }
+    searchTracks(search_query);
+  });
+
+  $("#searchbox > input").keyup(function(e) {
+    search_query = this.value;
+    search_offset = 0;
+    searchTracks(search_query);
   });
 
   $("#search_clear").on("click", function(e) {
@@ -152,86 +180,88 @@ $(document).ready(function() {
     checkWidth(window.innerWidth);
   }
 
-});
-
-var serverUrl = window.location.protocol + "//" + window.location.hostname;
-var clientId = window.location.pathname.split('/').pop();
-console.log("Client ID: " + serverUrl);
-var socket = io.connect(serverUrl, {
-  "force new connection": true
-});
-/*
-  Handle socket authentication with the server.
-*/
-socket.on('auth_request', function(data){
-  console.log("Received auth request...");
-
-  /* Send auth key */
-  socket.emit('auth_send', {key: clientId  });
-});
-
-/* Auth successful */
-socket.on('auth_success', function() {
-  console.log("Authentication success");
-  /* Listen for updates from the server */
-  var auth_success = true;
-});
-
-/* Unsuccessful auth */
-socket.on('auth_fail', function(err) {
-  console.log("Authentication failure: ", err);
-})
-
-/* Handle the server disconnecting */
-socket.on('disconnect', function() {
-  console.log("Server disconnected...");
-});
-
-/* Handles a new play state sent to the client */
-socket.on('state_change', function (state) {
-    console.log("Received new state from server: ", state);  
-    if (typeof state.play != 'undefined') {
-      updateVolume(state.volume);    
-    }
-    if (state.volume) {
-      updatePlaying(state.play);
-    }
-    if (state.track) {
-      updateCurrent(state.track);
-    }
-    if (state.queue) {
-      updateQueue(state.queue);
-    }
-});
-
-function updateVolume(volume) {
-  volInhibitKnobListiner = true;
-  $volume.val(volume).trigger('change');
-  volInhibitKnobListiner = false;
-}
-
-function updatePlaying(playing) {
-  $play_pause.removeClass("fa-" + ((playing) ? "play" : "pause"));
-  $play_pause.addClass("fa-" + ((playing) ? "pause" : "play"));
-  $play_pause.data("play", playing);
-}
-
-function updateCurrent(track) {
-
-  $current.css('background-image', 'url(' + track.album.images[0].url + ')');
-  $background.css('background-image', 'url(' + track.album.images[0].url + ')');
-  $current_name.html(track.name);
-  $current_artist.html(track.artists[0].name);
-}
-
-function updateQueue(queue) {
-  var resultsHtml = "";
-  $.each(queue, function(i, entry) {
-    resultsHtml += "<li class='track'>"
-      + "<div class='albumart'><img src='" + entry.track.album.images[2].url + "'/></div>"
-      + "<div class='trackname'>" + entry.track.name + "</div>"
-      + "<div class='artistname'>" + entry.track.artists[0].name + "</div>"
-    + "</li>";
+  var serverUrl = window.location.protocol + "//" + window.location.hostname;
+  var clientId = window.location.pathname.split('/').pop();
+  console.log("Client ID: " + clientId);
+  
+  var socket = io.connect(serverUrl, {
+    "force new connection": true
   });
-  $queue.html(resultsHtml);
-}
+  /*
+    Handle socket authentication with the server.
+  */
+  socket.on('auth_request', function(data){
+    console.log("Received auth request...");
+
+    /* Send auth key */
+    socket.emit('auth_send', {key: clientId  });
+  });
+
+  /* Auth successful */
+  socket.on('auth_success', function() {
+    console.log("Authentication success");
+    /* Listen for updates from the server */
+    var auth_success = true;
+  });
+
+  /* Unsuccessful auth */
+  socket.on('auth_fail', function(err) {
+    console.log("Authentication failure: ", err);
+  })
+
+  /* Handle the server disconnecting */
+  socket.on('disconnect', function() {
+    console.log("Server disconnected...");
+  });
+
+  /* Handles a new play state sent to the client */
+  socket.on('state_change', function (state) {
+      console.log("Received new state from server: ", state);  
+      if (typeof state.play != 'undefined') {
+        updateVolume(state.volume);    
+      }
+      if (state.volume) {
+        updatePlaying(state.play);
+      }
+      if (state.track) {
+        updateCurrent(state.track);
+      }
+      if (state.queue) {
+        updateQueue(state.queue);
+      }
+  });
+
+  function updateVolume(volume) {
+    volInhibitKnobListiner = true;
+    $volume.val(volume).trigger('change');
+    volInhibitKnobListiner = false;
+  }
+
+  function updatePlaying(playing) {
+    $play_pause.removeClass("fa-" + ((playing) ? "play" : "pause"));
+    $play_pause.addClass("fa-" + ((playing) ? "pause" : "play"));
+    $play_pause.data("play", playing);
+  }
+
+  function updateCurrent(track) {
+
+    $current.css('background-image', 'url(' + track.album.images[0].url + ')');
+    $background.css('background-image', 'url(' + track.album.images[0].url + ')');
+    $current_name.html(track.name);
+    $current_artist.html(track.artists[0].name);
+  }
+
+  function updateQueue(queue) {
+    var resultsHtml = "";
+    $.each(queue, function(i, entry) {
+      resultsHtml += "<li class='track'>"
+        + "<div class='albumart'><img src='" + entry.track.album.images[2].url + "'/></div>"
+        + "<div class='trackname'>" + entry.track.name + "</div>"
+        + "<div class='artistname'>" + entry.track.artists[0].name + "</div>"
+      + "</li>";
+    });
+    $queue.html(resultsHtml);
+  }
+
+});
+

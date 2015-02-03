@@ -26,7 +26,10 @@
     width: 48px !important;
   }
 
-  .track 
+  .logo {
+    width: 300px !important;
+    height: 55px !important;
+  }
 }
 
 @media (min-width : 420px) and (max-width: 639px) {
@@ -78,10 +81,18 @@ body{
   margin: 0px;
   padding: 0px;
   font-family: Sans-Serif;
-  background: #444;
+  background: #eeeeee;
   color: #111;
 }
 
+a {
+  color: #ddd;
+  text-decoration: none;
+}
+
+a:hover{
+  text-decoration: underline;  
+}
 
 #background {
   position: fixed;
@@ -99,12 +110,45 @@ body{
 
 #wrap {
   text-align: center;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.75);
   margin-left: auto;
   margin-right: auto;
   padding-bottom: 30px;
+  margin-top: -1px;
+  overflow: auto;
+  padding-top: 1px;
 }
 
+#wrap.white {
+  background: #fff;
+  box-shadow: rgba(0,0,0,0.5) 0px 1px 1px 0px;
+}
+
+.page_header {
+  color: #fff;
+  background: #222;
+  height: 22px;
+  padding: 10px 15px;
+}
+
+.page_header .playlist_nav{
+  display: inline;
+  float: left;
+}
+
+.page_header .user_nav{
+  display: inline;
+  float: right;
+}
+
+.user_header {
+  display: inline;
+  color: #84BD00;
+}
+
+#playlist_name {
+  margin: 10px 0px;
+}
 
 #current {
   background-color: #000;
@@ -112,7 +156,7 @@ body{
   color: #eee;
   white-space: normal;
   /*text-shadow: rgba(0,0,0,0.7) 1px 1px 5px;*/
-  margin-bottom: 30px;
+  margin-bottom: 15px;
   margin-left: auto;
   margin-right: auto;
   position: relative;
@@ -179,7 +223,7 @@ body{
   position: relative;
   margin-left: auto;
   margin-right: auto;
-  padding: 25px 0px;
+  padding: 5px 0px 25px 0px;
 }
 
 #searchbox{
@@ -217,26 +261,27 @@ body{
 #searchresults {
   display: none;
   position: absolute;
-  top: 64px;
+  top: 39px;
   left: 0px;
   z-index: 10;
   background: rgb(255,255,255);
-  border-bottom-left-radius: 15px;
-  border-bottom-right-radius: 15px;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
   box-shadow: rgba(0,0,0,0.5) 0px 1px 2px 0px;
 }
 
 .track{
-  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
   display: block;
   height: 4em;
-  margin: 10px 10px;
+  margin: 0px 10px;
+  padding: 8px 0px;
   text-align: left;
   color: #333;
 }
 
-.track:first-child{
-  border-top: 0px;
+.track:last-child {
+  border-bottom: 0px;
 }
 
 a.track {
@@ -245,6 +290,36 @@ a.track {
 
 a.track:hover{
   text-decoration: underline;
+}
+
+.search_next {
+  display: block;
+  color: #888;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  width: 100%;
+  /*border-top: 1px solid #ddd;*/
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.search_next:hover{
+  color: #000;
+  background: #ddd;
+}
+
+.search_prev {
+  display: block;
+  color: #888;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  width: 100%;
+  border-bottom: 1px solid #ddd;
+}
+
+.search_prev:hover{
+  color: #000;
+  background: #ddd;
 }
 
 .track .albumart {
@@ -276,16 +351,110 @@ a.track:hover{
 }
 
 #queue {
-  margin: 0px auto;
+  margin: 10px auto;
   background: rgb(255,255,255);
-  border-radius: 15px;
-  border-radius: 15px;
+  border-radius: 5px;
+  border-radius: 5px;
   padding: 5px 5px 10px 5px;
   box-shadow: rgba(0,0,0,0.5) 0px 1px 2px 0px;
 }
 
-body{
-  margin: 0px;
-  padding: 0px;
-  font-family: sans-serif;
+h1, h2, h3, h4, h5, h6 {
+  color: #fff;
+}
+
+form {
+  width: 100%;
+  text-align: center;
+}
+
+form input{
+  padding: 8px;
+  margin: 5px auto;
+  font-size: 1em;
+  background: #fff;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  margin: 3px;
+  box-shadow: rgba(0,0,0,0.1) 1px 1px 1px 0px;
+}
+
+.button {
+  padding: 8px;
+  margin: 5px auto;
+  font-size: 1em;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  margin: 3px;
+  box-shadow: rgba(0,0,0,0.1) 1px 1px 1px 0px;
+  background: #fff;
+}
+
+.import_from_playlist {
+}
+
+form input[type="submit"]{
+  box-shadow: rgba(0,0,0,0.1) 1px 1px 1px 0px;
+  background: #fff;
+}
+
+form .submitwrap input[type="text"]{
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 0px;
+  margin-right: 0px;
+  border-right: 0px;
+}
+
+form .submitwrap input[type="submit"]{
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+  margin-left: 0px;
+}
+
+.provider {
+  display: inline-block;
+  background: #fff;
+  padding: 0px 15px;
+  border-radius: 5px;
+  border: 1px solid #d8d8d8;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 1em;
+  margin: 0px 10px;
+}
+
+.provider .fa {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0px 20px 0px 0px;
+  font-size: 2em;
+}
+
+.provider .label {
+  display: inline-block;
+  line-height: 3em;
+}
+
+.google {
+  color: #db4c3f;
+}
+
+.facebook {
+  color: #3B5998;
+}
+
+.logo {
+  background-image: url("/images/queueup_logo.png");
+  background-size: contain;
+  width: 400px;
+  height: 73px;
+  margin: 50px auto 50px auto;
+}
+
+.logo_white {
+  background-image: url("/images/queueup_logo_white.png");
+}
+
+.dark {
+  color: #333;
 }

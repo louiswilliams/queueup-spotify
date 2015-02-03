@@ -1,0 +1,11 @@
+extends layout
+
+block content
+  #wrap.white
+      h1.dark= title
+      a.provider.spotify(href=authURL)= "Login with Spotify"
+      br
+
+  a.provider.facebook(href="/auth/facebook")
+    .fa.fa-facebook-square
+    .label= "Login with Facebook"

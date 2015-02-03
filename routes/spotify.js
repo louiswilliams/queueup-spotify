@@ -1,8 +1,9 @@
 var express = require('express');
 var router = express.Router();
 
-router.get('/search/:query', function(req, res) {
-  req.spotify.searchTracks(req.params.query, {limit: 5}).then(function(data) {
+router.get('/search/:query/:offset?', function(req, res) {
+  var offset = (req.params.offset) ? req.params.offset : 0;
+  req.spotify.searchTracks(req.params.query, {limit: 5, offset: offset}).then(function(data) {
     var response = {};
     var tracks = data.tracks.items;
     for (var i in tracks) {
@@ -21,8 +22,8 @@ router.get('/search/:query', function(req, res) {
     }
     res.json(response);
   }, function(err) {
-    res.status(404).end(err);
     console.log("Query error: ",err);
+    res.json({error: err});
   });
 });
 

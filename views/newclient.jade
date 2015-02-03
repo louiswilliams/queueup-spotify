@@ -1,0 +1,12 @@
+extends layout
+
+block content
+  #wrap
+    h2= "New Playlist"
+
+    
+
+    form#clientform(action="new" method="POST")
+        .submitwrap
+            input(type="text" name="playlist_name" placeholder="New Playlist Name")
+            input(type="submit" value="Create")

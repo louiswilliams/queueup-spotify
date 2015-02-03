@@ -1,0 +1,24 @@
+extends layout
+
+block content
+  #wrap
+
+    .page_header
+      .playlist_nav
+        a(href='/')
+          .fa.fa-angle-left
+          |  Go Home
+      .user_nav
+        | Logged in as 
+        a.user_header(href='/user')= user.spotify.id
+        | . 
+        a.user_header(href='/logout')= "Log out"
+          
+    h3 Import a playlist
+
+    form
+      .radio_group
+        each playlist in playlists
+          .radio_button
+            input(type="radio" name="playlist" value="#{playlist.owner.id}/#{playlist.id}")
+            .radio_label #{playlist.name}

@@ -2,7 +2,12 @@ extends layout
 
 block content
   #wrap
+
     .page_header
+      .playlist_nav
+        a(href='/')
+          .fa.fa-angle-left
+          |  Go Home
       .user_nav
         if typeof(user) == "undefined"
           | Not logged in. 
@@ -13,12 +18,16 @@ block content
           | . 
           a.user_header(href='/logout')= "Log out"
           
-    .logo.logo_white
-
-    h2.dark
-      a.new_playlist(href="/user") Create Playlist
+    h2= "My Playlists"
 
     ul
       each playlist in playlists
         li
           a(href="/playlist/" + playlist.key)= playlist.name
+
+    h2= "Create playlist"
+
+    form#clientform(action="new" method="POST")
+      .submitwrap
+        input(type="text" name="playlist_name" placeholder="Name")
+        input(type="submit" value="Create")

@@ -1,0 +1,59 @@
+extends layout
+
+block content
+  #background(style="background-image: url('" + album_art_url + "')")
+  script(src="/socket.io/socket.io.js")
+  script(src="/javascripts/jquery.knob.js")
+  script(src="/javascripts/client.js")
+  #wrap
+
+    .page_header
+      .playlist_nav
+        a(href='/')
+          .fa.fa-angle-left
+          |  Go Home
+      .user_nav
+        if typeof(user) == "undefined"
+          | Not logged in. 
+          a.user_header(href='/user')= "Log in with Spotify"
+        else
+          | Logged in as 
+          a.user_header(href='/user')= user.spotify.id
+          | . 
+          a.user_header(href='/logout')= "Log out"
+    h1#playlist_title= playlist.name
+
+    #searchwrap
+        #searchbox
+            input(type="text" placeholder="Search Tracks")
+            a#search_clear.fa.fa-close(href="#")
+        #searchresults
+
+
+    #current(style="background-image: url('" + album_art_url + "')")
+        if is_admin
+          #volumewrap
+            input#volume(class="dial", type="text", value=playlist.volume)
+
+        #current_title
+
+            #current_name= current_name
+            #current_artist= current_artist
+
+            if is_admin
+              #status
+                if next_state == "pause"
+                  a#statusChange.fa.fa-pause(href="#", data-play=play_state, data-id=playlist.key)
+                else
+                  a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
+                a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
+
+    button.button.import_from_playlist Import from my playlists
+
+    ol#queue
+      each track, i in queue
+        li.track
+          .albumart
+            img(src=track.track.album.images[2].url)
+          .trackname= track.track.name
+          .artistname= track.track.artists[0].name
