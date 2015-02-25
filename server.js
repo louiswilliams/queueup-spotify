@@ -72,7 +72,7 @@ io.on('connection', function(socket) {
 
     // Find cliet key in DB
     var clients = db.get('playlists');
-    clients.findOne(data, function(err, client) {
+    clients.findOne({_id: data.id}, function(err, client) {
       if (err) {
         // DB error
         console.log("Error finding client:", err);

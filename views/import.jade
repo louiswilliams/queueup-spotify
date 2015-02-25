@@ -1,24 +1,14 @@
 extends layout
 
 block content
-  #wrap
+  h2 Import a playlist
 
-    .page_header
-      .playlist_nav
-        a(href='/')
-          .fa.fa-angle-left
-          |  Go Home
-      .user_nav
-        | Logged in as 
-        a.user_header(href='/user')= user.spotify.id
-        | . 
-        a.user_header(href='/logout')= "Log out"
-          
-    h3 Import a playlist
+  ul.listing#playlist_listing
+    each playlist in playlists
+      a.list_item(href="#{playlist.external_urls.spotify}")
+        .list_item_image
+          if playlist.images.length > 0
+            img(src=playlist.images.pop().url, width=64, height=64)
+        .list_item_title= playlist.name
+        .list_item_desc= playlist.owner.id
 
-    form
-      .radio_group
-        each playlist in playlists
-          .radio_button
-            input(type="radio" name="playlist" value="#{playlist.owner.id}/#{playlist.id}")
-            .radio_label #{playlist.name}

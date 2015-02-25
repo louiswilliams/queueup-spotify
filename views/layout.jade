@@ -7,4 +7,23 @@ html
     link(rel="stylesheet" href="/styles/layout.css")
     link(rel="stylesheet" href="/styles/font-awesome.css")
   body
-    block content
+    #wrap
+        .page_header
+          unless home == true
+            .playlist_nav
+              a(href='/')
+                .fa.fa-angle-left
+                |  Go Home
+          .user_nav
+
+            if typeof(user) == "undefined"
+              | Not logged in. 
+              a.user_header(href='/user')= "Log in with Spotify"
+            else
+              | Logged in as 
+              a.user_header(href='/user')= user.spotify.id
+              | . 
+              a.user_header(href='/logout')= "Log out"
+         
+        block content
+

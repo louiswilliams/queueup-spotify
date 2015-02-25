@@ -1,6 +1,6 @@
 var SpotifyWebApi = require('spotify-web-api-node');
 var fs = require('fs');
-var spotifySecret = fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}).trim();
+var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}));
 
 function normalizeName(name) {
   return name.replace(/[^\w]/gi,'').toLowerCase();
@@ -9,14 +9,14 @@ function normalizeName(name) {
 function getSpotifyWebApi(user, callback) {
   if (user) {
 
-    var spotifyApi = new SpotifyWebApi({
-      refreshToken: user.spotify.refreshToken,
-      clientId: '00fcc73d47814711b7879b41692a2f5d',
-      clientSecret: spotifySecret,
-    });
+    var spotifyApi = new SpotifyWebApi(spotifyConfig);
+
+    spotifyApi.setAccessToken(user.spotify.accessToken);
+    spotifyApi.setRefreshToken(user.spotify.refreshToken);
 
     spotifyApi.refreshAccessToken().then(function (data) {
       spotifyApi.setAccessToken(data.access_token);
+      user.spotify.accessToken = data.access_token;
       callback(null, spotifyApi);
     }, function (err) {
       callback(err);
@@ -30,9 +30,16 @@ function getSpotifyWebApi(user, callback) {
 function getUserPlaylists (user, callback) {
   if (user) {
     getSpotifyWebApi(user, function (err, spotify) {
-      spotify.getUserPlaylists(user.spotify.id, {limit: 50}, function (err, playlists) {
-        callback(err, playlists);
-      });
+      if (err) {
+        callback(err);
+      } else {
+        spotify.getUserPlaylists(user.spotify.id, {limit: 50}).then(function(data) {
+          callback(null, data.items);
+        }, function(err) {
+          callback(err);
+        });        
+      }
+
     });     
   } else {
     callback(new Error("Invalid user"));    

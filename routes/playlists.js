@@ -5,7 +5,7 @@ var router = express.Router();
 router.param('playlist', function(req, res, next, id) {
   var playlists = req.db.get('playlists');
 
-  playlists.findOne({key: id},{}, function(err, playlist) {
+  playlists.findOne({_id: id},{}, function(err, playlist) {
     if (err){
        return next(new Error("Find playlist Error: " + err));
     }
@@ -16,11 +16,11 @@ router.param('playlist', function(req, res, next, id) {
        return next(new Error("Cound't find playlist " + id));
     }
   }); 
-
 });
 
+
 // GET /playlist/[playlist]
-router.get('/:playlist', function(req, res) {
+router.get('/:playlist/:name?', function(req, res) {
   console.log(req.playlist);
 
   var next_state = (req.playlist.play) ? "pause" : "play"; 
@@ -85,7 +85,7 @@ router.get('/:playlist', function(req, res) {
 
 // POST /playlist/[playlist]/play
 // Change the playing status of the track (true | false)
-router.post('/:playlist/play', function(req, res) {
+router.post('/:playlist/:name?/play', function(req, res) {
   var play = (req.body.play == "true"); // Toggle play/pause
 
   // Only the administrator can play/pause the track
@@ -116,7 +116,7 @@ router.post('/:playlist/play', function(req, res) {
 
 // POST /playlist/[playlist]/volume
 // Change the playback volume of the track [0-100]
-router.post('/:playlist/volume', function(req, res) {
+router.post('/:playlist/:name?/volume', function(req, res) {
 
   // Only the administrator can play/pause the track
   if (req.user && req.user._id.equals(req.playlist.admin)) {
@@ -152,7 +152,7 @@ router.post('/:playlist/volume', function(req, res) {
 
 // POST /playlist/[playlist]/add/[trackid]
 // Adds a track to the playlist's queue
-router.post('/:playlist/add/:trackid', function(req, res) {
+router.post('/:playlist/:name?/add/:trackid', function(req, res) {
   if (req.params.trackid) {
 
     /* First get the track information from Spotify */
@@ -169,7 +169,8 @@ router.post('/:playlist/add/:trackid', function(req, res) {
             {_id: req.playlist._id},
             {
               $set: {
-                current: track
+                current: track,
+                last_updated: new Date().getTime()
               }
             }, { new: true }
           ).success(function(playlist) {
@@ -253,13 +254,12 @@ router.post('/:playlist/add/:trackid', function(req, res) {
 
 // Called when the current track is to be ended and the next in the queue is to be played
 // POST /playlist/:playlist/skip
-router.post('/:playlist/skip', function(req, res) {
+router.post('/:playlist/:name?/skip', function(req, res) {
 
   // Only the administrator can play/pause the track
   if (req.user && req.user._id.equals(req.playlist.admin)) {
     // Find and remove the first item in the queue
     utils.skipTrack(req.db, req.io, req.playlist, function (result) {
-
       res.json(result);
     });
   } else {

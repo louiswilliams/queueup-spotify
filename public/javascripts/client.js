@@ -16,7 +16,7 @@ $(document).ready(function() {
     var play_state = ($play_pause.data("play") == true);
     var next_state = !play_state;
     e.preventDefault();
-    $.post(window.location.href + "/play", {play: next_state}, function(data) {
+    $.post(window.location.origin + window.location.pathname + "/play", {play: next_state}, function(data) {
       console.log(data);
       updatePlaying(data.play);
     });
@@ -27,7 +27,7 @@ $(document).ready(function() {
     var $link = $(this);
     var id = $link.data("id");
     e.preventDefault();
-    $.post(window.location.href + "/skip", function(data) {
+    $.post(window.location.origin + window.location.pathname + "/skip", function(data) {
       console.log(data);
     });
   });
@@ -48,7 +48,7 @@ $(document).ready(function() {
       volAjax.abort();
     }
 
-    volAjax = $.ajax(window.location.href + "/volume", {
+    volAjax = $.ajax(window.location.origin + window.location.pathname + "/volume", {
       type: "POST",
       data: { volume: val}  
     }).done(function(data) {
@@ -97,11 +97,11 @@ $(document).ready(function() {
         console.log(data);
         resultsHtml += "<a class='search_prev fa fa-angle-double-up' href='#'></a>"
         $.each(data, function(i, track) {
-          resultsHtml += "<a class='track' data-id='" + i + "' "
+          resultsHtml += "<a class='list_item' data-id='" + i + "' "
             + "href='" + document.URL + "/add/" + track.id + "'>"
-            + "<div class='albumart'><img src='" + track.album.images[2].url + "'/></div>"
-            + "<div class='trackname'>" + track.name + "</div>"
-            + "<div class='artistname'>" + track.artist + "</div>"
+            + "<div class='list_item_image'><img src='" + track.album.images[2].url + "'/></div>"
+            + "<div class='list_item_title'>" + track.name + "</div>"
+            + "<div class='list_item_desc'>" + track.artist + "</div>"
             + "</a>"
         });
         resultsHtml += "<a class='search_next fa fa-angle-double-down' href='#'></a>"
@@ -143,7 +143,7 @@ $(document).ready(function() {
     clearSearch();
   });
 
-  $("#searchresults").on("click", ".track", function(e) {
+  $("#searchresults").on("click", ".list_item", function(e) {
     console.log(this.href);
     e.preventDefault();
     $.post(this.href).done(function(data) {
@@ -181,7 +181,7 @@ $(document).ready(function() {
   }
 
   var serverUrl = window.location.protocol + "//" + window.location.hostname;
-  var clientId = window.location.pathname.split('/').pop();
+  var clientId = playlistId;
   console.log("Client ID: " + clientId);
   
   var socket = io.connect(serverUrl, {
@@ -194,7 +194,7 @@ $(document).ready(function() {
     console.log("Received auth request...");
 
     /* Send auth key */
-    socket.emit('auth_send', {key: clientId  });
+    socket.emit('auth_send', {id: clientId  });
   });
 
   /* Auth successful */
@@ -254,10 +254,10 @@ $(document).ready(function() {
   function updateQueue(queue) {
     var resultsHtml = "";
     $.each(queue, function(i, entry) {
-      resultsHtml += "<li class='track'>"
-        + "<div class='albumart'><img src='" + entry.track.album.images[2].url + "'/></div>"
-        + "<div class='trackname'>" + entry.track.name + "</div>"
-        + "<div class='artistname'>" + entry.track.artists[0].name + "</div>"
+      resultsHtml += "<li class='list_item'>"
+        + "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>"
+        + "<div class='list_item_title'>" + entry.track.name + "</div>"
+        + "<div class='list_item_desc'>" + entry.track.artists[0].name + "</div>"
       + "</li>";
     });
     $queue.html(resultsHtml);

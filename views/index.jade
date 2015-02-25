@@ -1,24 +1,23 @@
 extends layout
 
-block content
-  #wrap
-    .page_header
-      .user_nav
-        if typeof(user) == "undefined"
-          | Not logged in. 
-          a.user_header(href='/user')= "Log in with Spotify"
-        else
-          | Logged in as 
-          a.user_header(href='/user')= user.spotify.id
-          | . 
-          a.user_header(href='/logout')= "Log out"
-          
+block content 
     .logo.logo_white
 
-    h2.dark
-      a.new_playlist(href="/user") Create Playlist
 
-    ul
+    h2 Hot Playlists
+    #playlist_listing
       each playlist in playlists
-        li
-          a(href="/playlist/" + playlist.key)= playlist.name
+        a.list_item(href="/playlist/" + playlist._id + "/" + playlist.key)
+          .list_item_image
+            if playlist.current && playlist.current.album.images.length > 0
+              img(src=playlist.current.album.images.pop().url height=64 width=64)
+          .list_item_title
+            | #{playlist.name} 
+            if playlist.play
+              .playlist_listing_status Playing
+          .list_item_desc
+            if playlist.current
+              | #{playlist.current.name} by #{playlist.current.artists[0].name}
+    
+    h3
+      a.new_playlist(href="/user") Create New Playlist

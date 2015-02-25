@@ -15,7 +15,7 @@ Setup
 The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. All of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications).
 
 
-A MongoDB Server should be running on port 27017. This is configurable in `server.js`.
+A MongoDB Server should be running on `localhost:27017`. This is configurable in `server.js`.
 
 Run
 ---

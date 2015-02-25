@@ -5,7 +5,9 @@ var router = express.Router();
 router.get('/', function (req, res) {
 
   var playlists = req.db.get('playlists');
-  playlists.find({}, {}, function (e, docs) {
+  playlists.find({}, {
+    sort: {"last_updated": -1}
+  }, function (e, docs) {
     var user;
     if (req.user) {
       user = req.user;
@@ -13,7 +15,8 @@ router.get('/', function (req, res) {
     res.render('index', {
       title: "Home",
       playlists: docs,
-      user: user
+      user: user,
+      home: true
     });  
   });
 });
@@ -38,18 +41,18 @@ router.get('/user', function (req, res) {
 
 router.get('/user/import', function (req, res) {
   if (req.user) {
-    console.log(req.user);
 
     util.getUserPlaylists(req.user, function(err, playlists) {
-        if (err) {
-            console.log(err);
-        } else {
-            console.log(playlists);
-            res.render('import', {
-                user: req.user,
-                playlists: playlists.items
-            });
-        }
+      if (err) {
+        console.log(err);
+        res.redirect('/');
+      } else {
+        console.log(playlists);
+        res.render('import', {
+          user: req.user,
+          playlists: playlists
+        });
+      }
     });
 
 
@@ -70,33 +73,23 @@ router.post('/new', function (req, res) {
   var name = req.body.playlist_name;
 
   if (!req.user || !name) {
-    res.end();
+    res.redirect('/');
   } else {
     var key = name.replace(/[^\w]/gi,'').toLowerCase();
 
-    playlists.count({key: key}).success(function (count) {
-        if (count == 0) {
-            playlists.insert({
-              admin: req.user._id,
-              key: key,
-              name: name,
-              playing: false,
-              volume: 50
-            }).success(function (playlist) {
-              res.redirect('/playlist/' + key);
-            }).error(function (err) {
-              res.json({error: err});
-            });             
-        } else {
-          console.log("Duplicate key name");
-          res.json({error: "Duplicate key names. Choose a different name"});
-        }
-   
-        console.log(count);
-    }).error(function (error) {
-        res.end();
-        console.log(error);
-    });
+    playlists.insert({
+      admin: req.user._id,
+      key: key,
+      name: name,
+      playing: false,
+      volume: 50,
+      date_created: new Date().getTime(),
+      last_updated: new Date().getTime()
+    }).success(function (playlist) {
+      res.redirect('/playlist/' + playlist._id + "/" + key);
+    }).error(function (err) {
+      res.json({error: err});
+    });             
 
   }
 

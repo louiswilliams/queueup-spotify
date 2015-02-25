@@ -1,58 +1,67 @@
-extends layout
+doctype
+html
+  head
+    meta(name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no")
+    title #{playlist.name} - QueueupServer
+    script(src="/javascripts/jquery.js")
+    link(rel="stylesheet" href="/styles/layout.css")
+    link(rel="stylesheet" href="/styles/font-awesome.css")
 
-block content
-  #background(style="background-image: url('" + album_art_url + "')")
-  script(src="/socket.io/socket.io.js")
-  script(src="/javascripts/jquery.knob.js")
-  script(src="/javascripts/client.js")
-  #wrap
+    #background(style="background-image: url('" + album_art_url + "')")
+    script.
+      var playlistId="#{playlist._id}";
+    script(src="/socket.io/socket.io.js")
+    script(src="/javascripts/jquery.knob.js")
+    script(src="/javascripts/client.js")
 
-    .page_header
-      .playlist_nav
-        a(href='/')
-          .fa.fa-angle-left
-          |  Go Home
-      .user_nav
-        if typeof(user) == "undefined"
-          | Not logged in. 
-          a.user_header(href='/user')= "Log in with Spotify"
-        else
-          | Logged in as 
-          a.user_header(href='/user')= user.spotify.id
-          | . 
-          a.user_header(href='/logout')= "Log out"
-    h1#playlist_title= playlist.name
+    #wrap
 
-    a.import_from_playlist(href="/user/import") Import from my playlists
+      .page_header
+        .playlist_nav
+          a(href='/')
+            .fa.fa-angle-left
+            |  Go Home
+        .user_nav
+          if typeof(user) == "undefined"
+            | Not logged in. 
+            a.user_header(href='/user')= "Log in with Spotify"
+          else
+            | Logged in as 
+            a.user_header(href='/user')= user.spotify.id
+            | . 
+            a.user_header(href='/logout')= "Log out"
+      h1#playlist_title= playlist.name
 
-    #searchwrap
-        #searchbox
-            input(type="text" placeholder="Search Tracks")
-            a#search_clear.fa.fa-close(href="#")
-        #searchresults
+      a.import_from_playlist(href="/user/import") Import from my playlists
 
-    #current(style="background-image: url('" + album_art_url + "')")
-        if is_admin
-          #volumewrap
-            input#volume(class="dial", type="text", value=playlist.volume)
+      #searchwrap
+          #searchbox
+              input(type="text" placeholder="Search Tracks")
+              a#search_clear.fa.fa-close(href="#")
+          #searchresults
 
-        #current_title
+      #current(style="background-image: url('" + album_art_url + "')")
+          if is_admin
+            #volumewrap
+              input#volume(class="dial", type="text", value=playlist.volume)
 
-            #current_name= current_name
-            #current_artist= current_artist
+          #current_title
 
-            if is_admin
-              #status
-                if next_state == "pause"
-                  a#statusChange.fa.fa-pause(href="#", data-play=play_state, data-id=playlist.key)
-                else
-                  a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
-                a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
+              #current_name= current_name
+              #current_artist= current_artist
 
-    ol#queue
-      each track, i in queue
-        li.track
-          .albumart
-            img(src=track.track.album.images[2].url)
-          .trackname= track.track.name
-          .artistname= track.track.artists[0].name
+              if is_admin
+                #status
+                  if next_state == "pause"
+                    a#statusChange.fa.fa-pause(href="#", data-play=play_state, data-id=playlist.key)
+                  else
+                    a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
+                  a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
+
+      ul.listing#queue
+        each track, i in queue
+          li.list_item
+            .list_item_image
+              img(src=track.track.album.images[2].url)
+            .list_item_title= track.track.name
+            .list_item_desc= track.track.artists[0].name
