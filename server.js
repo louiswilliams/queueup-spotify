@@ -2,10 +2,14 @@ var express = require('express');
 var path = require('path');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
+var passport = require('passport');
 var SpotifyWebApi = require('spotify-web-api-node');
 var routes = require('./routes/index');
-var clientRouter = require('./routes/clients');
+var playlistRouter = require('./routes/playlists');
 var spotifyRouter = require('./routes/spotify');
+var passportRouter = require('./routes/passport');
 var utils = require('./utils');
 var fs = require('fs');
 
@@ -14,15 +18,12 @@ var monk = require('monk');
 
 var db = monk('localhost:27017/queueup');
 
-var clientSecret = fs.readFileSync('./spotify.key', {encoding: 'utf8'}).trim();
+var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}));
 
 // Initialize Spotify web api
-var spotify = new SpotifyWebApi({
-  clientId: '00fcc73d47814711b7879b41692a2f5d',
-  clientSecret: clientSecret,
-  redirectUri: 'http:\/\/queueup.louiswilliams.org/callback'
-});
+var spotify = new SpotifyWebApi(spotifyConfig);
 var app = express();
+
 // Initialize server and socket.io
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
@@ -38,13 +39,22 @@ app.use(function(req,res,next) {
   req.io = io;
   next();
 });
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(cookieParser());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(session({
+  secret: 'queuemeup',
+  resave: false,
+  saveUninitialized: true
+}));
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Routes
 app.use('/', routes);
-app.use('/client', clientRouter);
+app.use('/playlist', playlistRouter);
 app.use('/spotify', spotifyRouter);
+app.use('/auth', passportRouter);
 
 // Start server
 server.listen(3002, function() {
@@ -61,7 +71,7 @@ io.on('connection', function(socket) {
     console.log("Auth response from client...",data);
 
     // Find cliet key in DB
-    var clients = db.get('clients');
+    var clients = db.get('playlists');
     clients.findOne(data, function(err, client) {
       if (err) {
         // DB error
@@ -86,12 +96,8 @@ io.on('connection', function(socket) {
         socket.on('track_finished', function() {
           console.log("Track finished... Going to next");
           utils.skipTrack(db, io, client, function(result) {
-            // socket.emit('state_change', {
-            //  play: client.play,
-            //  volume: client.volume,
-            //  track: client.current,
-            //  trigger: "track"
-            // });
+            console.log(result);
+            // do something?
           });
         });
       } else {

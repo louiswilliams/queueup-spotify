@@ -13,7 +13,7 @@ var router = express.Router();
 
 // var facebookSecret = fs.readFileSync(__dirname + "/facebookSecret.key", {encoding: 'utf8'}).trim();
 // var googleSecret = fs.readFileSync(__dirname + "/googleSecret.key", {encoding: 'utf8'}).trim();
-var spotifySecret = fs.readFileSync(__dirname + '/../spotify.key', {encoding: 'utf8'}).trim();
+var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../spotify.key', {encoding: 'utf8'}));
 
 
 passport.serializeUser(function(user, done) {
@@ -30,9 +30,9 @@ passport.deserializeUser(function(id, done) {
 });
 
 passport.use(new SpotifyStrategy({
-    clientID: '00fcc73d47814711b7879b41692a2f5d',
-    clientSecret: spotifySecret,
-    callbackURL: 'http://queueup.louiswilliams.org/auth/spotify/callback'
+    clientID: spotifyConfig.clientId,
+    clientSecret: spotifyConfig.clientSecret,
+    callbackURL: spotifyConfig.redirectUri
   }, function(accessToken, refreshToken, profile, done) {
 
     var users = db.get('users');

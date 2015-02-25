@@ -23,12 +23,13 @@ block content
           a.user_header(href='/logout')= "Log out"
     h1#playlist_title= playlist.name
 
+    a.import_from_playlist(href="/user/import") Import from my playlists
+
     #searchwrap
         #searchbox
             input(type="text" placeholder="Search Tracks")
             a#search_clear.fa.fa-close(href="#")
         #searchresults
-
 
     #current(style="background-image: url('" + album_art_url + "')")
         if is_admin
@@ -47,8 +48,6 @@ block content
                 else
                   a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
                 a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
-
-    button.button.import_from_playlist Import from my playlists
 
     ol#queue
       each track, i in queue

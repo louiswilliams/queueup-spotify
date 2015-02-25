@@ -143,7 +143,12 @@ a:hover{
 
 .user_header {
   display: inline;
-  color: #84BD00;
+}
+
+.import_from_playlist {
+  color: #bbb;
+  display: block;
+  margin-bottom: 7px;
 }
 
 #playlist_name {
@@ -390,8 +395,7 @@ form input{
   background: #fff;
 }
 
-.import_from_playlist {
-}
+
 
 form input[type="submit"]{
   box-shadow: rgba(0,0,0,0.1) 1px 1px 1px 0px;

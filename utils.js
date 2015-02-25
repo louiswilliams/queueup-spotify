@@ -1,68 +1,141 @@
-function skipTrack(db, io, qclient, callback) {
-  db.get('queue').findAndModify({
-      query: {client: qclient._id},
-      sort: {added: 1},
-      remove: true
-    }, function(err, item) {
+var SpotifyWebApi = require('spotify-web-api-node');
+var fs = require('fs');
+var spotifySecret = fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}).trim();
+
+function normalizeName(name) {
+  return name.replace(/[^\w]/gi,'').toLowerCase();
+}
+
+function getSpotifyWebApi(user, callback) {
+  if (user) {
+
+    var spotifyApi = new SpotifyWebApi({
+      refreshToken: user.spotify.refreshToken,
+      clientId: '00fcc73d47814711b7879b41692a2f5d',
+      clientSecret: spotifySecret,
+    });
+
+    spotifyApi.refreshAccessToken().then(function (data) {
+      spotifyApi.setAccessToken(data.access_token);
+      callback(null, spotifyApi);
+    }, function (err) {
+      callback(err);
+    });
+
+  } else {
+    callback(new Error("Invalid user"));
+  }
+}
+
+function getUserPlaylists (user, callback) {
+  if (user) {
+    getSpotifyWebApi(user, function (err, spotify) {
+      spotify.getUserPlaylists(user.spotify.id, {limit: 50}, function (err, playlists) {
+        callback(err, playlists);
+      });
+    });     
+  } else {
+    callback(new Error("Invalid user"));    
+  }
+
+}
+
+function skipTrack(db, io, playlist, callback) {
+  
+  // Find the first and remove it
+  db.get('queue').findAndModify(
+      { playlist: playlist._id }, {},
+      {
+        sort: { last_updated: 1 },
+        remove: true
+      }, function(err, item) {
 
     var new_track;
 
-    // New track will be null if nothing was removed
+    /* New track will be null if nothing was removed */
     if (err) {
       callback({error: err, message: "Error finding item"});
-    } else if (item) {
-      new_track = item.track;
-    } else {
-      callback({message: "No more tracks in queue"})
-      return;
-    }
+    } else if (!item) {
+      /* No tracks in queue */
+      db.get('playlists').update(
+        {
+          _id: playlist._id
+        },
+        {
+          $set: {
+            current: null, 
+            last_updated: new Date().getTime()
+          }
+        },{
+          new: true
+        }, function(err, playlist) {
 
-    // Update the current track
-    db.get('clients').findAndModify({
-      query: {
-        _id: item.client
+          io.to(playlist.key).emit('state_change', {
+              play: playlist.play,
+              volume: playlist.volume,
+              track: playlist.current,
+              queue: [],
+              trigger: "last_track"
+          });
+
+          callback({message: "No more tracks in queue"})
+      });
+    } else {
+      new_track = item.track;
+
+      console.log("Playlist: ", item);
+
+      // Update the current track
+      db.get('playlists').findAndModify(
+      {
+        _id: item.playlist
       },
-      update: {
-        $set: {
+      { $set: {
           current: new_track, 
           last_updated: new Date().getTime()
-        }
-    // Error updating client
-      }
-    }, function(err, client) {
-      if (err) {
-        callback({error: err, message: "Error updating item"});
-      } else if (client) {
-      // Successfully updated client
-        console.log("Update success: ", client);
+      }}, {
+        new: true
+      }, function(err, playlist) {
+        
+        // Error updating playlist
+        if (err) {
+          callback({error: err, message: "Error updating item"});
+        } else if (playlist) {
+          // Successfully updated playlist
+          console.log("Update success: ", playlist);
 
-        /* Retreive the queue */
-        db.get('queue').find({
-          client: client._id
-        }, {
-          fields: {_id: 0, track: 1, added: 1, votes: 1}
-        }).success(function (queue) {
-          
-          /* Broadcast the change */
-          io.to(client.key).emit('state_change', {
-            play: client.play,
-            volume: client.volume,
-            track: new_track,
-            queue: queue,
-            trigger: "next_track"
+          /* Retreive the queue */
+          db.get('queue').find({
+            playlist: playlist._id
+          }, {
+            fields: {_id: 0, track: 1, added: 1, votes: 1}
+          }).success(function (queue) {
+            
+            /* Broadcast the change */
+            io.to(playlist.key).emit('state_change', {
+              play: playlist.play,
+              volume: playlist.volume,
+              track: playlist.current,
+              queue: queue,
+              trigger: "next_track"
+            });
+            callback({message: "Skipped to next track succesfully"});
+
+          }).error(function (err) {
+            callback({error: err});
           });
-          callback({message: "Skipped to next track succesfully"});
 
-        }).error(function (err) {
-          callback({error: err});
-        });
+          // Send success message
+        } else {
+          callback({message: "No playlist updated"});
+        }
+      });
+    }
 
-        // Send success message
-      } else {
-        callback({message: "No client updated"});
-      }
-    });
   });
 }
 
 exports.skipTrack = skipTrack;
+exports.normalizeName = normalizeName;
+exports.getUserPlaylists = getUserPlaylists;
+exports.getSpotifyWebApi = getSpotifyWebApi;
