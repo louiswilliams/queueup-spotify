@@ -1,11 +1,11 @@
 extends layout
 
 block content
-  h2 Import a playlist
+  h2 Import into #{currentPlaylist.name}
 
   ul.listing#playlist_listing
     each playlist in playlists
-      a.list_item(href="#{playlist.external_urls.spotify}")
+      a.list_item(href="/playlist/#{currentPlaylist._id}/#{currentPlaylist.key}/import/#{playlist.owner.id}/#{playlist.id}")
         .list_item_image
           if playlist.images.length > 0
             img(src=playlist.images.pop().url, width=64, height=64)

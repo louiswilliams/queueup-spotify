@@ -4,20 +4,21 @@
   "version": "0.0.1",
   "private": "true",
   "dependencies": {
-    "express": "4.7.2",
+    "async": "0.9.0",
     "body-parser": "1.5.2",
     "cookie-parser": "*",
+    "debug": "1.0.3",
+    "express": "4.7.2",
     "express-session": "*",
     "jade": "1.5.0",
     "morgan": "1.2.2",
     "mongodb": "1.4.7",
     "monk": "0.9.1",
-    "spotify-web-api-node": "*",
-    "socket.io": "1.2.1",
     "passport-facebook": "1.0.3",
     "passport-google-oauth": "*",
     "passport-spotify": "*",
     "passport": "*",
-    "debug": "1.0.3"
+    "spotify-web-api-node": "*",
+    "socket.io": "1.2.1"
   }
 }

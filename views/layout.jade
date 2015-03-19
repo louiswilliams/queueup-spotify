@@ -7,7 +7,7 @@ html
     link(rel="stylesheet" href="/styles/layout.css")
     link(rel="stylesheet" href="/styles/font-awesome.css")
   body
-    #wrap
+    #wrap.dark
         .page_header
           unless home == true
             .playlist_nav
@@ -21,7 +21,7 @@ html
               a.user_header(href='/user')= "Log in with Spotify"
             else
               | Logged in as 
-              a.user_header(href='/user')= user.spotify.id
+              a.user_header(href='/user')= user.spotify.displayName
               | . 
               a.user_header(href='/logout')= "Log out"
          

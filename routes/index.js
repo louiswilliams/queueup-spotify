@@ -8,6 +8,10 @@ router.get('/', function (req, res) {
   playlists.find({}, {
     sort: {"last_updated": -1}
   }, function (e, docs) {
+    var art;
+    if (docs.length > 0) {
+      art = docs[0].current.album.images[0].url;
+    }
     var user;
     if (req.user) {
       user = req.user;
@@ -16,7 +20,8 @@ router.get('/', function (req, res) {
       title: "Home",
       playlists: docs,
       user: user,
-      home: true
+      home: true,
+      albumArt: art
     });  
   });
 });

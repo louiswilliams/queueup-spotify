@@ -1,10 +1,12 @@
 extends layout
 
 block content 
-    .logo.logo_white
+    #background(style="background-image: url('" + albumArt + "')")
+    
+    .logowrap
+        .logo.logo_white
 
 
-    h2 Hot Playlists
     #playlist_listing
       each playlist in playlists
         a.list_item(href="/playlist/" + playlist._id + "/" + playlist.key)
@@ -18,6 +20,10 @@ block content
           .list_item_desc
             if playlist.current
               | #{playlist.current.name} by #{playlist.current.artists[0].name}
+      a.list_item(href="/user")
+        .list_item_image
+        .list_item_title.center Create New Playlist
     
-    h3
-      a.new_playlist(href="/user") Create New Playlist
+    .footwrap
+      a(href="http://louiswilliams.org" target="_blank") Louis Williams
+      span  2015

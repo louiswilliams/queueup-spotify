@@ -1,148 +1,216 @@
 var SpotifyWebApi = require('spotify-web-api-node');
 var fs = require('fs');
+var monk = require('monk');
+var db = monk('localhost:27017/queueup');
+var ObjectID = require('mongodb').ObjectID;
+
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}));
 
-function normalizeName(name) {
+exports.normalizeName = function (name) {
   return name.replace(/[^\w]/gi,'').toLowerCase();
 }
 
-function getSpotifyWebApi(user, callback) {
+exports.getSpotifyApiForUser = function (user, callback) {
   if (user) {
-
     var spotifyApi = new SpotifyWebApi(spotifyConfig);
 
     spotifyApi.setAccessToken(user.spotify.accessToken);
     spotifyApi.setRefreshToken(user.spotify.refreshToken);
 
-    spotifyApi.refreshAccessToken().then(function (data) {
-      spotifyApi.setAccessToken(data.access_token);
-      user.spotify.accessToken = data.access_token;
+    // If accessToken has expired
+    if (user.spotify.tokenExpiration < new Date().getTime()) {
+      spotifyApi.refreshAccessToken().then(function (data) {
+        user.spotify.accessToken = data.access_token;
+        user.spotify.tokenExpiration = (data.expires_in * 1000) + new Date().getTime();
+
+        spotifyApi.setAccessToken(data.access_token);
+        callback(null, spotifyApi, user);
+      }, function (err) {
+        callback(err);
+      });      
+    } else {
       callback(null, spotifyApi);
-    }, function (err) {
-      callback(err);
-    });
+    }
+
 
   } else {
     callback(new Error("Invalid user"));
   }
 }
 
-function getUserPlaylists (user, callback) {
-  if (user) {
-    getSpotifyWebApi(user, function (err, spotify) {
-      if (err) {
-        callback(err);
-      } else {
-        spotify.getUserPlaylists(user.spotify.id, {limit: 50}).then(function(data) {
-          callback(null, data.items);
-        }, function(err) {
-          callback(err);
-        });        
-      }
-
-    });     
+exports.getUserPlaylistTracks = function (user, playlist, callback) {
+  if (user && playlist) {
+    getSpotifyApiForUser(user, playlist);
   } else {
-    callback(new Error("Invalid user"));    
+    callback(new Error("User or playlist is undefined"));
+  }
+}
+
+exports.skipTrack = function (db, io, playlist, callback) {
+  
+  /* If there's anything in the queue */
+  if (playlist.tracks && playlist.tracks.length > 0) {
+
+    /* Store the first track */
+    var first = playlist.tracks[0];
+    console.log("Removing: ", first.track.id);
+
+    /* Remove the first track from the DB, set the current as the stored track */
+    db.get('playlists').findAndModify({
+      _id: playlist._id
+    }, {
+      $set: {current: first.track},
+      $pop: {tracks: -1}
+    }, {
+      "new": true
+    }).success(function (playlist) {
+
+      /* Broadcast the change */
+      io.to(playlist._id).emit('state_change', {
+        play: playlist.play,
+        volume: playlist.volume,
+        track: playlist.current,
+        queue: playlist.tracks,
+        trigger: "next_track"
+      });
+
+      callback({message: "Skipped to next track"});
+
+    }).error(function (err) {
+      callback({error: err});
+    });
+
+  } else {
+    callback({message: "No more tracks in queue"});
   }
 
 }
 
-function skipTrack(db, io, playlist, callback) {
-  
-  // Find the first and remove it
-  db.get('queue').findAndModify(
-      { playlist: playlist._id }, {},
-      {
-        sort: { last_updated: 1 },
-        remove: true
-      }, function(err, item) {
+exports.userIsPlaylistAdmin = function (user, playlist) {
+  if (!user || !playlist) {
+    return false;
+  }
+  return (user._id.equals(playlist.admin));
+}
 
-    var new_track;
-
-    /* New track will be null if nothing was removed */
-    if (err) {
-      callback({error: err, message: "Error finding item"});
-    } else if (!item) {
-      /* No tracks in queue */
-      db.get('playlists').update(
-        {
-          _id: playlist._id
-        },
-        {
-          $set: {
-            current: null, 
-            last_updated: new Date().getTime()
-          }
-        },{
-          new: true
-        }, function(err, playlist) {
-
-          io.to(playlist.key).emit('state_change', {
-              play: playlist.play,
-              volume: playlist.volume,
-              track: playlist.current,
-              queue: [],
-              trigger: "last_track"
-          });
-
-          callback({message: "No more tracks in queue"})
-      });
-    } else {
-      new_track = item.track;
-
-      console.log("Playlist: ", item);
-
-      // Update the current track
-      db.get('playlists').findAndModify(
-      {
-        _id: item.playlist
-      },
-      { $set: {
-          current: new_track, 
-          last_updated: new Date().getTime()
-      }}, {
-        new: true
-      }, function(err, playlist) {
-        
-        // Error updating playlist
-        if (err) {
-          callback({error: err, message: "Error updating item"});
-        } else if (playlist) {
-          // Successfully updated playlist
-          console.log("Update success: ", playlist);
-
-          /* Retreive the queue */
-          db.get('queue').find({
-            playlist: playlist._id
-          }, {
-            fields: {_id: 0, track: 1, added: 1, votes: 1}
-          }).success(function (queue) {
-            
-            /* Broadcast the change */
-            io.to(playlist.key).emit('state_change', {
-              play: playlist.play,
-              volume: playlist.volume,
-              track: playlist.current,
-              queue: queue,
-              trigger: "next_track"
-            });
-            callback({message: "Skipped to next track succesfully"});
-
-          }).error(function (err) {
-            callback({error: err});
-          });
-
-          // Send success message
-        } else {
-          callback({message: "No playlist updated"});
-        }
-      });
+exports.updateUser = function (db, user, update, callback) {
+  db.get('user').update({
+    _id: user._id
+  }, { $set: update }).error(function (err) {
+    if (callback) {
+      callback(err);    
     }
-
+  }).success(function(record) {
+    if (callback) {
+      callback(record);
+    }
   });
 }
 
-exports.skipTrack = skipTrack;
-exports.normalizeName = normalizeName;
-exports.getUserPlaylists = getUserPlaylists;
-exports.getSpotifyWebApi = getSpotifyWebApi;
+exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
+  /* First get the track information from Spotify */
+
+  req.spotify.getTrack(trackId).then(function(track) {
+
+    /* This keeps on the fields we want */
+    track = exports.objCopy(track, {"name": true,"id": true, "uri": true, "artists": true, "album.id": true, "album.images": true, "album.name": true, "album.uri": true});
+
+    /* track should be defined if Spotify found a valid track */
+    if (track) {
+
+      /* If there isn't a current track, don't put this in the queue */
+      if (!playlist.current) {
+
+        /* Set the current track to the one just added */
+        req.db.get('playlists').findAndModify(
+          {_id: playlist._id},
+          {
+            $set: { current: track }
+          }, { "new": true }
+        ).success(function(playlist) {
+
+          /* playlist found in DB */
+          req.io.to(playlist._id).emit('state_change', {
+            play: playlist.play,
+            volume: playlist.volume,
+            track: playlist.current,
+            trigger: "add_track"
+          });
+          callback(null, playlist);
+
+        }).error(function (err) {
+          req.json({error: err});
+        });
+
+      /* Add the track to the end of the queue */
+      } else {
+
+
+        /* Append the track */
+        req.db.get('playlists').findAndModify(
+          {_id: playlist._id},
+          {
+            $push: {
+              tracks: {
+                _id: new ObjectID(),
+                track: track
+              }
+            }
+          }, {"new": true}
+        ).success(function (playlist) {
+        
+          /* Added successfully */
+          console.log("Added track: ", track.id);
+
+          req.io.to(playlist._id).emit('state_change', {
+            play: playlist.play,
+            volume: playlist.volume,
+            track: playlist.current,
+            queue: playlist.tracks,
+            trigger: "add_track_queue"
+          });
+          
+          callback(null, playlist);
+        }).error(function (err) {
+          console.log(err);
+        });
+      }
+    } else {
+      /* If the response from Spotify was undefined */
+      callback({
+        error: "Track not found",
+        message: "TrackID: " + req.params.trackid
+      });
+    }
+    
+  });
+}
+
+exports.trackSimplify = function (track) {
+  return {
+  }
+}
+
+exports.objCopy = function (object, keep) {
+  function copyObjField(object, fields, input) {
+    var o = (input) ? input : undefined;
+
+    if (fields.length >= 1) {
+      if (!o) { o = {} };
+      var top = fields.splice(0,1)[0];
+      var value = object[top];
+      if (value) {
+        o[top] = (fields.length == 0) ? value : copyObjField(value, fields, o[top]);
+      }
+    }
+    return o;
+  }
+
+  var result = {};
+  if (keep) {
+    for (key in keep) {
+      copyObjField(object, key.split('.'), result)
+    }
+  }
+  return result;
+}

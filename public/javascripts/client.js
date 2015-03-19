@@ -7,19 +7,57 @@ $(document).ready(function() {
   var $current = $("#current");
   var $current_name = $("#current_name");
   var $current_artist = $("#current_artist");
+  var $searchresults = $("#searchresults");
+  var $searchbox = $("#searchbox > input")
   var volInhibitKnobListiner = false;
   var volInhibitServerListener = false;
 
+  var serverUrl = window.location.protocol + "//" + window.location.hostname;
+  var playlistUrl = window.location.origin + window.location.pathname;
+
+  $searchbox.focus();
+
+  /* Create knob */
+  $volume.knob({
+    'release': setVolume,
+    'width': 250,
+    'height': 250,
+    'angleArc': 270,
+    'angleOffset': 225,
+    'min': 0,
+    'max': 100,
+    'bgColor': "rgba(0,0,0,0.6)",
+    'fgColor': "#fff",
+  });
+
+  var startPosition = 0;
+
+  /* Make queue sortable */
+  $queue.sortable({
+    start: function(event, ui) {
+      startPosition = ui.item.index();
+      this.style.cursor='move';
+    },
+    stop: function(event, ui) {
+      this.style.cursor='default';
+
+      var move = {
+        id: ui.item.data("id"),
+        from: startPosition,
+        to: ui.item.index()
+      }
+      console.log(move);
+      $.post(playlistUrl + "/reorder", move, function(data) {
+        console.log(data);
+      });
+    }
+  });
+
+
   /* Play/pause button pressed */
   $play_pause.click(function(e) {
-    var id = $play_pause.data("id");
-    var play_state = ($play_pause.data("play") == true);
-    var next_state = !play_state;
     e.preventDefault();
-    $.post(window.location.origin + window.location.pathname + "/play", {play: next_state}, function(data) {
-      console.log(data);
-      updatePlaying(data.play);
-    });
+    togglePlayPause();
   });
   
   /* Track skip button pressed */
@@ -27,10 +65,74 @@ $(document).ready(function() {
     var $link = $(this);
     var id = $link.data("id");
     e.preventDefault();
-    $.post(window.location.origin + window.location.pathname + "/skip", function(data) {
+    $.post(playlistUrl + "/skip", function(data) {
       console.log(data);
     });
   });
+
+  $(document).on('keypress', function (e) {
+    if (e.which == 32 ) {
+      var tag = e.target.tagName.toLowerCase();
+      if (tag != 'input' || $searchbox.val() == "") {
+        $play_pause.focus();
+        togglePlayPause();
+        e.preventDefault();
+      }
+    }
+  });
+
+  $searchresults.on("click", ".search_prev", function(e) {
+    e.preventDefault();
+    if (search_offset >= 5) {
+      search_offset -= 5;    
+    }
+    searchTracks(search_query);
+  });
+
+  $searchresults.on("click", ".search_next", function(e) {
+    e.preventDefault();
+    if (search_offset <= 15) {
+      search_offset += 5;      
+    }
+    searchTracks(search_query);
+  });
+
+  $searchbox.keyup(function(e) {
+    search_query = this.value;
+    search_offset = 0;
+    searchTracks(search_query);
+  });
+
+  $("#search_clear").on("click", function(e) {
+    e.preventDefault();
+    clearSearch();
+  });
+
+  $searchresults.on("click", ".list_item", function(e) {
+    console.log(this.href);
+    e.preventDefault();
+    $.post(this.href).done(function(data) {
+      clearSearch();
+      console.log(data);
+   });
+  });
+
+  $("#queue").on("click", ".list_item_delete", function(e) {
+    e.preventDefault();
+    $.post(this.href).done(function(data) {
+      console.log(data);
+    });
+  })
+
+  function togglePlayPause() {
+    var id = $play_pause.data("id");
+    var play_state = ($play_pause.data("play") == true);
+    var next_state = !play_state;
+    $.post(playlistUrl + "/play", {play: next_state}, function(data) {
+      console.log(data);
+      updatePlaying(data.play);
+    });
+  }
 
   /* Send volume update to server */
   var volAjax;
@@ -48,7 +150,7 @@ $(document).ready(function() {
       volAjax.abort();
     }
 
-    volAjax = $.ajax(window.location.origin + window.location.pathname + "/volume", {
+    volAjax = $.ajax(playlistUrl + "/volume", {
       type: "POST",
       data: { volume: val}  
     }).done(function(data) {
@@ -61,18 +163,6 @@ $(document).ready(function() {
     console.log(val);
   }
 
-  /* Create knob */
-  $volume.knob({
-    'release': setVolume,
-    'width': 250,
-    'height': 250,
-    'angleArc': 270,
-    'angleOffset': 225,
-    'min': 0,
-    'max': 100,
-    'bgColor': "rgba(0,0,0,0.6)",
-    'fgColor': "#fff",
-  });
 
   /* Search box keyup */
   var searchAjax;
@@ -80,7 +170,7 @@ $(document).ready(function() {
   var search_query = "";
 
   function searchTracks(query) {
-    $results = $("#searchresults");
+    $results = $searchresults;
     if (query.length > 0) {
 
 
@@ -116,46 +206,10 @@ $(document).ready(function() {
     }
   }
 
-  $("#searchresults").on("click", ".search_prev", function(e) {
-    e.preventDefault();
-    if (search_offset >= 5) {
-      search_offset -= 5;    
-    }
-    searchTracks(search_query);
-  });
-
-  $("#searchresults").on("click", ".search_next", function(e) {
-    e.preventDefault();
-    if (search_offset <= 15) {
-      search_offset += 5;      
-    }
-    searchTracks(search_query);
-  });
-
-  $("#searchbox > input").keyup(function(e) {
-    search_query = this.value;
-    search_offset = 0;
-    searchTracks(search_query);
-  });
-
-  $("#search_clear").on("click", function(e) {
-    e.preventDefault();
-    clearSearch();
-  });
-
-  $("#searchresults").on("click", ".list_item", function(e) {
-    console.log(this.href);
-    e.preventDefault();
-    $.post(this.href).done(function(data) {
-      clearSearch();
-      console.log(data);
-   });
-  });
-
   function clearSearch(callback) {
-    $("#searchresults").slideUp(100, function() {
+    $searchresults.slideUp(100, function() {
       $(this).html("");
-      $("#searchbox > input").val("");
+      $searchbox.val("");
       if (callback) {
         callback();      
       }
@@ -180,7 +234,6 @@ $(document).ready(function() {
     checkWidth(window.innerWidth);
   }
 
-  var serverUrl = window.location.protocol + "//" + window.location.hostname;
   var clientId = playlistId;
   console.log("Client ID: " + clientId);
   
@@ -254,9 +307,13 @@ $(document).ready(function() {
   function updateQueue(queue) {
     var resultsHtml = "";
     $.each(queue, function(i, entry) {
-      resultsHtml += "<li class='list_item'>"
-        + "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>"
-        + "<div class='list_item_title'>" + entry.track.name + "</div>"
+      resultsHtml += "<li class='list_item' data-id='" + entry._id + "'>"
+        + "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>";
+      // if (isAdmin) {
+        resultsHtml += "<a href ='" + playlistUrl + '/delete/'
+          + entry._id + "' class='list_item_delete fa fa-trash'></a>";
+      // }  
+      resultsHtml += "<div class='list_item_title'>" + entry.track.name + "</div>"
         + "<div class='list_item_desc'>" + entry.track.artists[0].name + "</div>"
       + "</li>";
     });

@@ -8,7 +8,6 @@ html
     link(rel="stylesheet" href="/styles/font-awesome.css")
     link(rel="stylesheet" href="/styles/jquery-ui.css")
 
-
     #background(style="background-image: url('" + album_art_url + "')")
     script.
       var playlistId="#{playlist._id}";
@@ -16,7 +15,6 @@ html
     script(src="/socket.io/socket.io.js")
     script(src="/javascripts/jquery.knob.js")
     script(src="/javascripts/jquery-ui.js")
-    script(src="/javascripts/touch-punch.js")
     script(src="/javascripts/client.js")
 
     #wrap
@@ -38,7 +36,7 @@ html
               a.user_header(href='/logout')= "Log out"
 
       .playlist_header
-        #playlist_title= playlist.name
+        h1#playlist_title= playlist.name
 
       #current(style="background-image: url('" + album_art_url + "')")
           
@@ -72,7 +70,7 @@ html
 
       ul.listing#queue
         each track, i in queue
-          li.list_item(data-id="#{track.sequence}")
+          li.list_item(data-id="#{track._id}")
             .list_item_image
               img(src=track.track.album.images.pop().url)
             

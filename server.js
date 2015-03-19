@@ -10,6 +10,7 @@ var routes = require('./routes/index');
 var playlistRouter = require('./routes/playlists');
 var spotifyRouter = require('./routes/spotify');
 var passportRouter = require('./routes/passport');
+var apiRouter = require('./routes/api');
 var utils = require('./utils');
 var fs = require('fs');
 
@@ -31,7 +32,7 @@ var io = require('socket.io')(server);
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-app.use(logger('dev'));
+app.use(logger('common'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(function(req,res,next) {
   req.db = db;
@@ -55,6 +56,7 @@ app.use('/', routes);
 app.use('/playlist', playlistRouter);
 app.use('/spotify', spotifyRouter);
 app.use('/auth', passportRouter);
+app.use('/api', apiRouter);
 
 // Start server
 server.listen(3002, function() {
@@ -71,34 +73,41 @@ io.on('connection', function(socket) {
     console.log("Auth response from client...",data);
 
     // Find cliet key in DB
-    var clients = db.get('playlists');
-    clients.findOne({_id: data.id}, function(err, client) {
+    var playlists = db.get('playlists');
+    playlists.findOne({_id: data.id}, function(err, playlist) {
       if (err) {
         // DB error
-        console.log("Error finding client:", err);
-        socket.emit('auth_fail', {message: "DB Error finding client" , error: err});
-      } else if(client) {
+        console.log("Error finding playlist:", err);
+        socket.emit('auth_fail', {message: "DB Error finding playlist" , error: err});
+      } else if(playlist) {
         // Success
         console.log("Autheticated successfully...");
         socket.emit('auth_success');
-        // Join a Socket room identified by the client's key
-        socket.join(client.key);
+        // Join a Socket room identified by the playlist's key
+        socket.join(playlist._id);
 
+        var queue = (playlist.tracks) ? playlist.tracks : [];
         // Send an initial update
         socket.emit('state_change', {
-          play: client.play,
-          volume: client.volume,
-          track: client.current,
-          trigger: "client_connect"
+          play: playlist.play,
+          volume: playlist.volume,
+          track: playlist.current,
+          queue: playlist.tracks,
+          trigger: "playlist_connect"
         });
-    
-        // Capture track_finished event from client
+
+        // Capture track_finished event from playlist
         socket.on('track_finished', function() {
           console.log("Track finished... Going to next");
-          utils.skipTrack(db, io, client, function(result) {
-            console.log(result);
-            // do something?
+          playlists.findOne({_id: playlist._id}).success(function (playlist) {
+            utils.skipTrack(db, io, playlist, function(result) {
+              console.log(result);
+              // do something?
+            });
+          }).error(function (err) {
+            console.log(err);
           });
+
         });
       } else {
         // Key not found in DB

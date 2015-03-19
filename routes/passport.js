@@ -17,12 +17,12 @@ var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../spotify.key', {e
 
 
 passport.serializeUser(function(user, done) {
-    console.log("Serialize: ", user);
+    // console.log("Serialize: ", user);
     done(null, user._id);
 });
 
 passport.deserializeUser(function(id, done) {
-    console.log("Deserialize: ", id);
+    // console.log("Deserialize: ", id);
     var users = db.get('users');
     users.findOne({_id: id}, function(err, user) {
         done(err, user);    
@@ -33,9 +33,10 @@ passport.use(new SpotifyStrategy({
     clientID: spotifyConfig.clientId,
     clientSecret: spotifyConfig.clientSecret,
     callbackURL: spotifyConfig.redirectUri
-  }, function(accessToken, refreshToken, profile, done) {
-
+  }, function(accessToken, refreshToken, params, profile, done) {
     var users = db.get('users');
+
+    var expirationDate = (params.expires_in * 1000) + new Date().getTime();
     users.findAndModify(
         { "spotify.id" : profile.id},
         { spotify: {
@@ -44,7 +45,8 @@ passport.use(new SpotifyStrategy({
             username: profile.username,
             profileUrl: profile.profileUrl,
             accessToken: accessToken,
-            refreshToken: refreshToken
+            refreshToken: refreshToken,
+            tokenExpiration: expirationDate
         }},
         { "new": true, "upsert": true}
     ).success(function (user) {
