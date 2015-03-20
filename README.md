@@ -10,8 +10,8 @@ Live site
  - [qup.louiswilliams.org](http://qup.louiswilliams.org) (Any of 'q', 'qup', or 'queueup' subdomains will work)
 
 
-![Playlist](http://qup.louiswilliams.org/images/screen3small.png)
 ![Playlist](http://qup.louiswilliams.org/images/screen1small.png)
+![Playlist](http://qup.louiswilliams.org/images/screen3small.png)
 
 Setup
 -------
