@@ -6,14 +6,13 @@ html
     script(src="/javascripts/jquery.js")
     link(rel="stylesheet" href="/styles/layout.css")
     link(rel="stylesheet" href="/styles/font-awesome.css")
+    link(rel="shortcut icon" type="image/x-icon" href="images/icon.ico")
   body
     #wrap.dark
         .page_header
-          unless home == true
-            .playlist_nav
-              a(href='/')
-                .fa.fa-angle-left
-                |  Go Home
+          .playlist_nav
+            a.nav_home(href='/')
+                
           .user_nav
 
             if typeof(user) == "undefined"

@@ -50,7 +50,9 @@ $(document).ready(function() {
       $.post(playlistUrl + "/reorder", move, function(data) {
         console.log(data);
       });
-    }
+    },
+    handle: '.list_item_drag',
+    cursor: 'move'
   });
 
 
@@ -122,7 +124,7 @@ $(document).ready(function() {
     $.post(this.href).done(function(data) {
       console.log(data);
     });
-  })
+  });
 
   function togglePlayPause() {
     var id = $play_pause.data("id");
@@ -309,10 +311,11 @@ $(document).ready(function() {
     $.each(queue, function(i, entry) {
       resultsHtml += "<li class='list_item' data-id='" + entry._id + "'>"
         + "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>";
-      // if (isAdmin) {
+      if (!pretty) {
+        resultsHtml += "<div class='list_item_drag fa fa-bars'></div>";
         resultsHtml += "<a href ='" + playlistUrl + '/delete/'
           + entry._id + "' class='list_item_delete fa fa-trash'></a>";
-      // }  
+      }  
       resultsHtml += "<div class='list_item_title'>" + entry.track.name + "</div>"
         + "<div class='list_item_desc'>" + entry.track.artists[0].name + "</div>"
       + "</li>";

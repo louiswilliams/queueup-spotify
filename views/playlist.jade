@@ -13,6 +13,7 @@ html
     script.
       var playlistId="#{playlist._id}";
       var isAdmin=#{is_admin};
+      var pretty=#{pretty};
     script(src="/socket.io/socket.io.js")
     script(src="/javascripts/jquery.knob.js")
     script(src="/javascripts/jquery-ui.js")
@@ -24,9 +25,7 @@ html
       if !pretty
         .page_header
           .playlist_nav
-            a(href='/')
-              .fa.fa-angle-left
-              |  Go Home
+            a.nav_home(href='/')
           .user_nav
             if typeof(user) == "undefined"
               | Not logged in. 
@@ -42,8 +41,9 @@ html
 
       #current(style="background-image: url('" + album_art_url + "')")
           
-          #volumewrap
-            input#volume(class="dial", type="text", value=playlist.volume)
+          if !pretty
+            #volumewrap
+              input#volume(class="dial", type="text", value=playlist.volume)
 
           #current_title
 
@@ -76,6 +76,7 @@ html
             .list_item_image
               img(src=track.track.album.images.pop().url)
             
+            .fa.fa-bars.list_item_drag
             a.fa.fa-trash.list_item_delete(href="/playlist/#{playlist._id}/#{playlist.key}/delete/#{track._id}")
             .list_item_title= track.track.name
             .list_item_desc= track.track.artists[0].name

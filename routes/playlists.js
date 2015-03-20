@@ -50,6 +50,7 @@ function getPlaylist (req, res, pretty) {
   var play_state = (req.playlist.play) ? "true" : "false"; 
 
   var is_admin = false;
+  var pretty = (pretty == true) ? true : false;
 
   if (req.user) {
     if (req.user._id.equals(req.playlist.admin)) {

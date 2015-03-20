@@ -25,7 +25,7 @@ router.param('playlist', function(req, res, next, id) {
 router.get('/playlists', function (req, res) {
   var playlists = req.db.get('playlists');
 
-  playlists.find({},{$sort: {last_updated: -1}}).success(function (documents) {
+  playlists.find({},{sort: {"last_updated": -1}}).success(function (documents) {
     res.json({playlists: documents});
   }).error(function (err) {
     res.json({error: err});

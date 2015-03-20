@@ -16,7 +16,6 @@ var fs = require('fs');
 
 var mongo = require('mongodb');
 var monk = require('monk');
-
 var db = monk('localhost:27017/queueup');
 
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}));
