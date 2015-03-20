@@ -13,7 +13,6 @@
     "jade": "1.5.0",
     "morgan": "1.2.2",
     "mongodb": "1.4.7",
-    "mongoose": "3.8.25",
     "monk": "0.9.1",
     "passport-facebook": "1.0.3",
     "passport-google-oauth": "*",

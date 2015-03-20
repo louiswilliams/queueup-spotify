@@ -186,11 +186,16 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
   });
 }
 
+
 exports.trackSimplify = function (track) {
   return {
   }
 }
 
+/** 
+  This returns a copy of the object, but with the set of 'keep' fields retained.
+  Inner objects can be retained using "." between fields.
+*/
 exports.objCopy = function (object, keep) {
   function copyObjField(object, fields, input) {
     var o = (input) ? input : undefined;
