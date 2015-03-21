@@ -113,7 +113,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
   req.spotify.getTrack(trackId).then(function(track) {
 
     /* This keeps on the fields we want */
-    track = exports.objCopy(track, {"name": true,"id": true, "uri": true, "artists": true, "album.id": true, "album.images": true, "album.name": true, "album.uri": true});
+    track = exports.objCopy(track, {"name": true,"duration_ms": true, "id": true, "uri": true, "artists": true, "album.id": true, "album.images": true, "album.name": true, "album.uri": true});
 
     /* track should be defined if Spotify found a valid track */
     if (track) {

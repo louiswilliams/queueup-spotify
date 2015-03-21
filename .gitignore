@@ -1,3 +1,4 @@
 /node_modules/
 /data/
 *.key
+npm-debug.log
