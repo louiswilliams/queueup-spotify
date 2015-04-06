@@ -1,17 +1,17 @@
 QueueUp Server
 ===========
 
-QueueUp is a collaborative, real-time playlist. Collaborators can add tracks to play in real-time. Spotify users can create and manage playlists. 
+QueueUp is a collaborative playlist streaming service. Anybody can create a playlist, use Spotify to stream from QueueUp, and invite friends to contribute in real time.
 
-This repository is for the QueueUp *Server*, which maintains playlists. Read below about *Players*.
+A QueueUp *Player* is requried to stream from QueueUp. This repository is for the QueueUp *Server*. Read below about *Players*.
 
 Live site
 ---
- - [qup.louiswilliams.org](http://qup.louiswilliams.org) (Any of 'q', 'qup', or 'queueup' subdomains will work)
+ - [q.louiswilliams.org](http://q.louiswilliams.org) (Any of [q,qup,queueup] subdomains will work)
 
 
-![Playlist](http://qup.louiswilliams.org/images/screen1small.png)
-![Playlist](http://qup.louiswilliams.org/images/screen3small.png)
+![Playlist](public/images/screen1small.png)
+![Playlist](public/images/screen3small.png)
 
 Setup
 -------
@@ -43,7 +43,7 @@ A QueueUp Player is required to play from [QueueUp](http://qup.louiswilliams.org
 Available Players:
   - [Android Player](https://github.com/extrakt/queueup-player-android): An ready-to-run AndroidStudio project.
   - [Node.js Player](https://github.com/extrakt/queueup-spotify-client): Requires some setup, but effectively the same as the Android player, just on a desktop platform.
-  - [iOS](https://developer.spotify.com/technologies/spotify-ios-sdk/): *You* should be the one to make it. See *Imlementation*.
+  - [iOS](https://developer.spotify.com/technologies/spotify-ios-sdk/): *You* should be the one to make it. See *Implementation*.
 
 Notes:
   - All players requrie Spotify Premium accounts. This is a result of music licensing contracts, and there is no way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
@@ -60,7 +60,7 @@ The playlist subscription process happens in this order:
 
 1. Socket#connect `http://queueup.louiswilliams.org` *Connect to Queueup or your own server*.
 2. Socket#on `auth_request` *Server is requesting a playlist ID*  
-3. Socket#emit `auth_send`: `{id: [playlist_id]}` *Send back the ID of the playlist to play. See *API* for getting an ID*  
+3. Socket#emit `auth_send`: `{id: [playlist_id]}` *Send back the ID of the playlist to play. See* API *for getting an ID*  
   3.1. Socket#on `auth_success` *You are now subscribed to udpates from the playlist*  
   3.2. Socket#on `auth_fail` *A problem occured subscribing to the playlist*
 
