@@ -284,11 +284,11 @@ $(document).ready(function() {
   /* Handles a new play state sent to the client */
   socket.on('state_change', function (state) {
       console.log("Received new state from server: ", state);
-      if (typeof state.play != 'undefined') {
-        updateVolume(state.volume);
+      if (state.play) {
+        updatePlaying(state.play);
       }
       if (state.volume) {
-        updatePlaying(state.play);
+        updateVolume(state.volume);
       }
       if (state.track) {
         updateCurrent(state.track);
@@ -313,6 +313,7 @@ $(document).ready(function() {
   }
 
   function updatePlaying(playing) {
+    console.log("Change play state");
     $play_pause.removeClass("fa-" + ((playing) ? "play" : "pause"));
     $play_pause.addClass("fa-" + ((playing) ? "pause" : "play"));
     $play_pause.data("play", playing);

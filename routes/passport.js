@@ -24,7 +24,7 @@ passport.deserializeUser(function(id, done) {
     // console.log("Deserialize: ", id);
     var users = db.get('users');
     users.findOne({_id: id}, function(err, user) {
-        done(err, user);    
+        done(err, user);
     })
 });
 
@@ -38,7 +38,7 @@ passport.use(new SpotifyStrategy({
     var expirationDate = (params.expires_in * 1000) + new Date().getTime();
     users.findAndModify(
         { "spotify.id" : profile.id},
-        { $set: { 
+        { $set: {
             displayName: ((profile.displayName) ? profile.displayName : profile.id),
             spotify: {
               id: profile.id,
@@ -161,7 +161,7 @@ router.get('/google', passport.authenticate('google', {
 }));
 
 
-router.get('/google/callback', 
+router.get('/google/callback',
   passport.authenticate('google', {
     successRedirect: '/',
     failureRedirect: '/failure'
