@@ -15,6 +15,7 @@ var utils = require('./utils');
 var fs = require('fs');
 
 var mongo = require('mongodb');
+var ObjectId = require('mongodb').ObjectID;
 var monk = require('monk');
 var db = monk('localhost:27017/queueup');
 
@@ -73,12 +74,14 @@ io.on('connection', function(socket) {
 
     // Find client key in DB
     var playlists = db.get('playlists');
-    playlists.findOne({_id: data.id}, function(err, playlist) {
-      if (err) {
-        // DB error
-        console.log("Error finding playlist:", err);
-        socket.emit('auth_fail', {message: "DB Error finding playlist" , error: err});
-      } else if(playlist) {
+    if (typeof(data) == 'string') {
+        console.log("Weird. Data coming in as string. Parsing anyways...");
+        data = JSON.parse(data);
+    }
+
+    playlists.findOne({_id: new ObjectId(data.id)}).success(function (playlist) {
+
+      if(playlist) {
         // Success
         console.log("Autheticated successfully...");
         socket.emit('auth_success');
@@ -115,13 +118,46 @@ io.on('connection', function(socket) {
           }).error(function (err) {
             console.log(err);
           });
+        });
+
+        // Capture playing progress
+        socket.on('track_progress', function(update) {
+          // console.log("Track at " + update.progress + "/" + update.duration);
+
+          io.to(playlist._id).emit('track_progress_update', {
+            progress: update.progress,
+            duration: update.duration
+          });
+        });
+
+        // Capture track_update
+        socket.on('playback_update', function(update) {
+          var playing = update.playing;
+          // console.log("Track at " + update.progress + "/" + update.duration);
+          playlists.findAndUpdate(
+            {_id: playlist._id},
+            { $set: {
+              play: playing
+            }},
+            {"new": true}
+          ).success(function (playlist) {
+            io.to(playlist._id).emit('state_change', {
+              play: playlist.play
+            });
+          }).error(function (err) {
+            console.log(err);
+          }); 
 
         });
       } else {
         // Key not found in DB
-        console.log("Invalid authentication key...");
-        socket.emit('auth_fail', {message: "Key invalid"});
+        console.log("Invalid playlist...");
+        socket.emit('auth_fail', {message: "Playlist ID invalid"});
       }
+    }).error(function (err) {
+      // DB error
+      console.log("Error finding playlist:", err);
+      socket.emit('auth_fail', {message: "DB Error finding playlist" , error: err});
     });
   });
 });

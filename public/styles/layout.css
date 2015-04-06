@@ -220,7 +220,7 @@ ul {
   background: rgba(0,0,0,0.5);
   width: 100%;
   position: absolute;
-  bottom: 10px;
+  bottom: 0px;
 }
 
 #current_name {
@@ -269,6 +269,18 @@ ul {
   z-index: -1;
 }
 
+#playlist_progress {
+  width: 100%;
+  height: 3px;
+  background: rgba(0,0,0,0.25);
+}
+
+#playlist_progress .progress_bar {
+  float: left;
+  width: 0%;
+  height: 3px;
+  background: #ddd;
+}
 
 #searchwrap {
   text-align: center;
@@ -333,6 +345,25 @@ ul {
   background: rgba(34,34,34,0.8);
 }
 
+#queue .list_item .voting {
+  width: 21px;
+  float: left;
+  margin-top: 15px;
+  margin-left: 0px;
+  font-size: 1em;
+  margin-right: 7px;
+  text-align: center;
+  line-height: 1.1em;
+}
+
+#queue .list_item .voting .upvote{
+  display: inline-block;
+}
+
+#queue .list_item .voting .votes{
+  display: inline-block;
+}
+
 #playlist_listing {
   margin: 10px auto;
 }
@@ -346,6 +377,7 @@ ul {
   color: #eee;
 
 }
+
 
 #playlist_listing .list_item_image{
   background: url("/images/spotifydark.png");
@@ -423,6 +455,8 @@ a.list_item:hover{
   background: #484848;
 }
 
+
+
 .list_item .list_item_image {
   height: 64px;
   width: 64px;
@@ -446,9 +480,11 @@ a.list_item:hover{
   float: right;
   margin-top: 1.0em;
   padding: 3px;
-  margin-right: 0.5em;
+  margin-right: 5px;
   font-size: 1.25em;
   display: block;
+  color: transparent;
+  text-shadow: 1px 1px 0px rgba(87, 87, 87, 0.5), 0 0px 0 #000;
 }
 
 .list_item .list_item_drag:hover {

@@ -9,10 +9,8 @@ router.get('/', function (req, res) {
     sort: {"last_updated": -1}
   }, function (e, docs) {
     var art;
-    if (docs.length > 0) {
-      if (docs[0].current) {
-        art = docs[0].current.album.images[0].url;
-      }
+    if (docs.length > 0 && docs[0].current) {
+      art = docs[0].current.album.images[0].url;
     }
     var user;
     if (req.user) {
