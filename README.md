@@ -43,10 +43,10 @@ A QueueUp Player is required to play from [QueueUp](http://qup.louiswilliams.org
 Available Players:
   - [Android Player](https://github.com/extrakt/queueup-player-android): An ready-to-run AndroidStudio project.
   - [Node.js Player](https://github.com/extrakt/queueup-spotify-client): Requires some setup, but effectively the same as the Android player, just on a desktop platform.
-  - [iOS](https://developer.spotify.com/technologies/spotify-ios-sdk/): *You* should be the one to make it. See *Implementation*.
+  - [iOS](https://github.com/reynoldsjay/queueup-player-ios): XCode project with iPhone player.
 
 Notes:
-  - All players requrie Spotify Premium accounts. This is a result of music licensing contracts, and there is no way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
+  - All players require Spotify Premium accounts. This is a result of music licensing contracts, and there is no way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
   - No web streaming API exists, again, because of music licensing issues with Spotify. Currently, the streaming APIs are limited to Android, iOS, and C (personal use developer accounts only).
 
 Implementation
@@ -102,11 +102,11 @@ Objects
         -  `href` *String*: Spotify URLs
         -  `external_urls` *[String]*: Extra URLs
     -  `album` *Object*: Spotify's Album object
-        - `id` *String*: Spotify ID 
+        - `id` *String*: Spotify ID
         - `name` *String*: Album name
         - `uri` *String*: Spotify URI
         - `images` *[Object]*: Array of Images
-            - `height`: *Number*: Image height 
+            - `height`: *Number*: Image height
             - `width`: *Number*: Image width
             - `url`: *String*: Image URL
 - *QueueItem*: Item in the queue

@@ -10,7 +10,9 @@ router.get('/', function (req, res) {
   }, function (e, docs) {
     var art;
     if (docs.length > 0) {
-      art = docs[0].current.album.images[0].url;
+      if (docs[0].current) {
+        art = docs[0].current.album.images[0].url;
+      }
     }
     var user;
     if (req.user) {
@@ -22,7 +24,7 @@ router.get('/', function (req, res) {
       user: user,
       home: true,
       albumArt: art
-    });  
+    });
   });
 });
 
@@ -94,7 +96,7 @@ router.post('/new', function (req, res) {
       res.redirect('/playlist/' + playlist._id + "/" + key);
     }).error(function (err) {
       res.json({error: err});
-    });             
+    });
 
   }
 

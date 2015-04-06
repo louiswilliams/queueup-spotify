@@ -6,6 +6,7 @@ router.get('/search/:query/:offset?', function(req, res) {
   req.spotify.searchTracks(req.params.query, {limit: 5, offset: offset}).then(function(data) {
     var response = {};
     var tracks = data.tracks.items;
+    console.log(tracks);
     for (var i in tracks) {
       var track = {
         name: tracks[i].name,
@@ -20,6 +21,7 @@ router.get('/search/:query/:offset?', function(req, res) {
       };
       response[i] = track;
     }
+    console.log("here")
     res.json(response);
   }, function(err) {
     console.log("Query error: ",err);

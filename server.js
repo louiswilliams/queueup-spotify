@@ -71,7 +71,7 @@ io.on('connection', function(socket) {
   socket.on('auth_send', function(data) {
     console.log("Auth response from client...",data);
 
-    // Find cliet key in DB
+    // Find client key in DB
     var playlists = db.get('playlists');
     playlists.findOne({_id: data.id}, function(err, playlist) {
       if (err) {
@@ -94,6 +94,15 @@ io.on('connection', function(socket) {
           queue: playlist.tracks,
           trigger: "playlist_connect"
         });
+
+        socket.on('client_play_pause', function() {
+          console.log("Client changed play state.");
+          playlist.update({play: !playlist.play}, function (err, doc) {
+            if (err)
+              throw err;
+          });
+            // ???npm
+        })
 
         // Capture track_finished event from playlist
         socket.on('track_finished', function() {
