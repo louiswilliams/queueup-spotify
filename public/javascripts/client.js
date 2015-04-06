@@ -5,10 +5,12 @@ $(document).ready(function() {
   var $play_pause = $("#statusChange");
   var $queue = $("#queue");
   var $current = $("#current");
+  var $progress_bar = $("#playlist_progress > .progress_bar");
   var $current_name = $("#current_name");
   var $current_artist = $("#current_artist");
   var $searchresults = $("#searchresults");
-  var $searchbox = $("#searchbox > input")
+  var $searchbox = $("#searchbox > input");
+
   var volInhibitKnobListiner = false;
   var volInhibitServerListener = false;
 
@@ -122,6 +124,16 @@ $(document).ready(function() {
   $("#queue").on("click", ".list_item_delete", function(e) {
     e.preventDefault();
     $.post(this.href).done(function(data) {
+      console.log(data);
+    });
+  });
+
+  $("#queue").on("click", ".upvote", function(e) {
+    e.preventDefault();
+    $.post(this.href).done(function(data) {
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
       console.log(data);
     });
   });
@@ -286,6 +298,14 @@ $(document).ready(function() {
       }
   });
 
+  /* Handles a new play state sent to the client */
+  socket.on('track_progress_update', function (update) {
+    var percent = 100 * (update.progress / update.duration);
+    console.log("Progress: " + percent);
+    $progress_bar.animate({width: percent + "%"}, 1000);
+  });
+
+
   function updateVolume(volume) {
     volInhibitKnobListiner = true;
     $volume.val(volume).trigger('change');
@@ -309,15 +329,21 @@ $(document).ready(function() {
   function updateQueue(queue) {
     var resultsHtml = "";
     $.each(queue, function(i, entry) {
-      resultsHtml += "<li class='list_item' data-id='" + entry._id + "'>"
-        + "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>";
+      resultsHtml += "<li class='list_item' data-id='" + entry._id + "'>";
+        resultsHtml += "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>";
+        resultsHtml += "<div class='voting'>";
+        resultsHtml += "<a class='upvote' href='" + playlistUrl + "/vote/" + entry._id + "'><div class='fa fa-arrow-up'></div></a>";
+        resultsHtml += "<div class='votes'>" + ((entry.votes) ? entry.votes : 0) + "</div>";
+        resultsHtml += "</div>";
+
       if (!pretty) {
         resultsHtml += "<div class='list_item_drag fa fa-bars'></div>";
-        resultsHtml += "<a href ='" + playlistUrl + '/delete/'
-          + entry._id + "' class='list_item_delete fa fa-trash'></a>";
+        if (isAdmin) {
+          resultsHtml += "<a href ='" + playlistUrl + '/delete/' + entry._id + "' class='list_item_delete fa fa-trash'></a>";        
+        }
       }  
-      resultsHtml += "<div class='list_item_title'>" + entry.track.name + "</div>"
-        + "<div class='list_item_desc'>" + entry.track.artists[0].name + "</div>"
+      resultsHtml += "<div class='list_item_title'>" + entry.track.name + "</div>";
+      resultsHtml += "<div class='list_item_desc'>" + entry.track.artists[0].name + "</div>"
       + "</li>";
     });
     $queue.html(resultsHtml);

@@ -4,10 +4,18 @@ var utils = require('../utils');
 var router = express.Router();
 var ObjectID = require('mongodb').ObjectID;
 
+
+// router.use(function (req, res, next) {
+//   if (!req.user) {
+//     req.session.redirect_after = req.protocol + '://' + req.get('host') + req.originalUrl;
+//     return res.redirect("/auth/facebook");
+//   }
+//   return next();  
+// });
+
 // playlist param
 router.param('playlist', function(req, res, next, id) {
   var playlists = req.db.get('playlists');
-
   playlists.findOne({_id: id},{}, function(err, playlist) {
     if (err){
        return next(new Error("Find playlist Error: " + err));
@@ -127,7 +135,7 @@ router.post('/:playlist/:name/volume', function(req, res) {
   var playlists = req.db.get('playlists');
 
   // Only the administrator can play/pause the track
-  // if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
+  if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
     var volume = Math.min(Math.abs(req.body.volume), 100);
 
     playlists.findAndModify({
@@ -153,9 +161,9 @@ router.post('/:playlist/:name/volume', function(req, res) {
       console.log(err);
       res.json(err);
     });
-  // } else {
-  //   res.json({error: "Only admin can change volume"});
-  // }
+  } else {
+    res.json({error: "Only admin can change volume"});
+  }
 });
 
 // POST /playlist/[playlist]/add/[trackid]
@@ -196,7 +204,7 @@ router.post('/:playlist/:name/delete/:id', function(req, res) {
   var playlists = req.db.get('playlists');
 
   var trackId = req.params.id;
-  // if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
+  if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
 
     playlists.findAndModify({
       _id: req.playlist._id
@@ -225,9 +233,49 @@ router.post('/:playlist/:name/delete/:id', function(req, res) {
       res.end(err);
     });
 
-  // } else {
-  //   res.json({error: "Only admin can delete tracks"});
-  // }
+  } else {
+    res.json({error: "Only admin can delete tracks"});
+  }
+});
+
+// POST /playlist/:playlist/vote/:id
+router.post('/:playlist/:name/vote/:id', function(req, res) {
+
+  if (!req.user) {
+    req.session.redirect_after = req.protocol + '://' + req.get('host') + '/playlist/' + req.playlist._id;
+    
+    return res.json({redirect: "/auth/facebook"});
+  }
+
+  var playlists = req.db.get('playlists');
+
+  var trackId = req.params.id;
+
+  playlists.findAndModify({
+    _id: req.playlist._id,
+    "tracks._id": trackId
+  }, {
+    $inc: {
+      "tracks.$.votes": 1
+    },
+    $push: {
+      "tracks.$.voters": req.user._id
+    }
+  }, {
+    "new": true
+  }).success(function (playlist) {
+    var queue = (playlist.tracks) ? playlist.tracks : [];
+    console.log(playlist);
+
+    req.io.to(playlist._id).emit('state_change', {
+      queue: queue,
+      trigger: "upvote"
+    });
+
+    res.json({message: "Voted successfully"});
+  }).error(function (err) {
+    res.end(err);
+  });
 });
 
 router.post('/:playlist/:name/reorder', function(req, res) {
