@@ -284,7 +284,7 @@ $(document).ready(function() {
   /* Handles a new play state sent to the client */
   socket.on('state_change', function (state) {
       console.log("Received new state from server: ", state);
-      if (state.play) {
+      if (typeof(state.play) != "undefined") {
         updatePlaying(state.play);
       }
       if (state.volume) {

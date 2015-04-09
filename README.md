@@ -67,8 +67,13 @@ The playlist subscription process happens in this order:
 Playlist Updates
 ----------------
 Any of the following Socket.io events may happen:
+
+From Server to Player
  - `disconnect`: The server has disconnected. You will no longer receive updates unless either you manually reconnect,  or Socket.io does so automatically.
  - `state_change`: The server has sent you a State object in the JSON format. See *State* object below.
+
+ From Player to Server
+ - 'client_play_pause': sent with a JSON object {'playing' : true/false}, requests that the server change the current play state
 
 Objects
 =======
