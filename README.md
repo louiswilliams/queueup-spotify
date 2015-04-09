@@ -73,7 +73,7 @@ From Server to Player
  - `state_change`: The server has sent you a State object in the JSON format. See *State* object below.
 
  From Player to Server
- - 'client_play_pause': sent with a JSON object {'playing' : true/false}, requests that the server change the current play state
+ - `client_play_pause`: sent with a JSON object {'playing' : true/false}, requests that the server change the current play state
 
 Objects
 =======
