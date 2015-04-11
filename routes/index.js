@@ -22,7 +22,7 @@ router.get('/', function (req, res) {
       user: user,
       home: true,
       albumArt: art
-    });  
+    });
   });
 });
 
@@ -94,7 +94,7 @@ router.post('/new', function (req, res) {
       res.redirect('/playlist/' + playlist._id + "/" + key);
     }).error(function (err) {
       res.json({error: err});
-    });             
+    });
 
   }
 

@@ -2,3 +2,4 @@
 /data/
 *.key
 npm-debug.log
+.DS_Store

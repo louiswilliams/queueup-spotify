@@ -63,7 +63,7 @@ $(document).ready(function() {
     e.preventDefault();
     togglePlayPause();
   });
-  
+
   /* Track skip button pressed */
   $("#next").click(function(e) {
     var $link = $(this);
@@ -88,7 +88,7 @@ $(document).ready(function() {
   $searchresults.on("click", ".search_prev", function(e) {
     e.preventDefault();
     if (search_offset >= 5) {
-      search_offset -= 5;    
+      search_offset -= 5;
     }
     searchTracks(search_query);
   });
@@ -96,7 +96,7 @@ $(document).ready(function() {
   $searchresults.on("click", ".search_next", function(e) {
     e.preventDefault();
     if (search_offset <= 15) {
-      search_offset += 5;      
+      search_offset += 5;
     }
     searchTracks(search_query);
   });
@@ -160,17 +160,17 @@ $(document).ready(function() {
     }
     console.log("Setting volume to ", val);
 
-    if (volAjax) { 
+    if (volAjax) {
       volAjax.abort();
     }
 
     volAjax = $.ajax(playlistUrl + "/volume", {
       type: "POST",
-      data: { volume: val}  
+      data: { volume: val}
     }).done(function(data) {
       console.log("Set to ", data.volume);
 
-    });      
+    });
   }
 
   function knobChange(val){
@@ -192,7 +192,7 @@ $(document).ready(function() {
       if (searchAjax) { searchAjax.abort(); }
 
       searchAjax = $.ajax("/spotify/search/" + query + "/" + search_offset);
-      searchAjax.done(function(data) {
+      searchAjax.success(function(data) {
         if (data.error) {
           console.log(data);
           return;
@@ -212,7 +212,7 @@ $(document).ready(function() {
         $results.html(resultsHtml);
         $results.slideDown(100);
       });
-      searchAjax.fail(function(data) {
+      searchAjax.error(function(data) {
         console.log("Fail: ", data);
       });
     } else {
@@ -225,7 +225,7 @@ $(document).ready(function() {
       $(this).html("");
       $searchbox.val("");
       if (callback) {
-        callback();      
+        callback();
       }
     });
   }
@@ -250,7 +250,7 @@ $(document).ready(function() {
 
   var clientId = playlistId;
   console.log("Client ID: " + clientId);
-  
+
   var socket = io.connect(serverUrl, {
     "force new connection": true
   });
@@ -283,12 +283,12 @@ $(document).ready(function() {
 
   /* Handles a new play state sent to the client */
   socket.on('state_change', function (state) {
-      console.log("Received new state from server: ", state);  
-      if (typeof state.play != 'undefined') {
-        updateVolume(state.volume);    
+      console.log("Received new state from server: ", state);
+      if (typeof(state.play) != "undefined") {
+        updatePlaying(state.play);
       }
       if (state.volume) {
-        updatePlaying(state.play);
+        updateVolume(state.volume);
       }
       if (state.track) {
         updateCurrent(state.track);
@@ -313,6 +313,7 @@ $(document).ready(function() {
   }
 
   function updatePlaying(playing) {
+    console.log("Change play state");
     $play_pause.removeClass("fa-" + ((playing) ? "play" : "pause"));
     $play_pause.addClass("fa-" + ((playing) ? "pause" : "play"));
     $play_pause.data("play", playing);
@@ -339,9 +340,9 @@ $(document).ready(function() {
       if (!pretty) {
         resultsHtml += "<div class='list_item_drag fa fa-bars'></div>";
         if (isAdmin) {
-          resultsHtml += "<a href ='" + playlistUrl + '/delete/' + entry._id + "' class='list_item_delete fa fa-trash'></a>";        
+          resultsHtml += "<a href ='" + playlistUrl + '/delete/' + entry._id + "' class='list_item_delete fa fa-trash'></a>";
         }
-      }  
+      }
       resultsHtml += "<div class='list_item_title'>" + entry.track.name + "</div>";
       resultsHtml += "<div class='list_item_desc'>" + entry.track.artists[0].name + "</div>"
       + "</li>";
@@ -350,4 +351,3 @@ $(document).ready(function() {
   }
 
 });
-

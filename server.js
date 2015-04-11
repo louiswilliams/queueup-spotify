@@ -72,7 +72,7 @@ io.on('connection', function(socket) {
   socket.on('auth_send', function(data) {
     console.log("Auth response from client...",data);
 
-    // Find cliet key in DB
+    // Find client key in DB
     var playlists = db.get('playlists');
     if (typeof(data) == 'string') {
         console.log("Weird. Data coming in as string. Parsing anyways...");
@@ -98,6 +98,28 @@ io.on('connection', function(socket) {
           trigger: "playlist_connect"
         });
 
+        socket.on('client_play_pause', function(play_state) {
+          if (typeof(play_state) == 'string') {
+              console.log("Weird. Data coming in as string. Parsing anyways...");
+              play_state = JSON.parse(play_state);
+          }
+          console.log("Client play/pause.");
+          playlists.findAndModify(
+            {_id: playlist._id},
+            { $set: {
+              play: play_state.playing
+            }},
+            {"new": true}
+          ).success(function (playlist) {
+            io.to(playlist._id).emit('state_change', {
+              play: playlist.play,
+              trigger: "client_play_pause"
+            });
+          }).error(function (err) {
+            console.log(err);
+          });
+        });
+
         // Capture track_finished event from playlist
         socket.on('track_finished', function() {
           console.log("Track finished... Going to next");
@@ -121,25 +143,24 @@ io.on('connection', function(socket) {
           });
         });
 
-        // Capture track_update
-        socket.on('playback_update', function(update) {
-          var playing = update.playing;
-          // console.log("Track at " + update.progress + "/" + update.duration);
-          playlists.findAndUpdate(
-            {_id: playlist._id},
-            { $set: {
-              play: playing
-            }},
-            {"new": true}
-          ).success(function (playlist) {
-            io.to(playlist._id).emit('state_change', {
-              play: playlist.play
-            });
-          }).error(function (err) {
-            console.log(err);
-          }); 
-
-        });
+        // // Capture track_update
+        // socket.on('playback_update', function(update) {
+        //   var playing = update.playing;
+        //   console.log("playback update");
+        //   playlists.findAndUpdate(
+        //     {_id: playlist._id},
+        //     { $set: {
+        //       play: playing
+        //     }},
+        //     {"new": true}
+        //   ).success(function (playlist) {
+        //     io.to(playlist._id).emit('state_change', {
+        //       play: playlist.play
+        //     });
+        //   }).error(function (err) {
+        //     console.log(err);
+        //   });
+        // });
       } else {
         // Key not found in DB
         console.log("Invalid playlist...");
