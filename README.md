@@ -43,10 +43,10 @@ A QueueUp Player is required to play from [QueueUp](http://qup.louiswilliams.org
 Available Players:
   - [Android Player](https://github.com/extrakt/queueup-player-android): An ready-to-run AndroidStudio project.
   - [Node.js Player](https://github.com/extrakt/queueup-spotify-client): Requires some setup, but effectively the same as the Android player, just on a desktop platform.
-  - [iOS](https://developer.spotify.com/technologies/spotify-ios-sdk/): *You* should be the one to make it. See *Implementation*.
+  - [iOS](https://github.com/reynoldsjay/queueup-player-ios): XCode project with iPhone player.
 
 Notes:
-  - All players requrie Spotify Premium accounts. This is a result of music licensing contracts, and there is no way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
+  - All players require Spotify Premium accounts. This is a result of music licensing contracts, and there is no way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
   - No web streaming API exists, again, because of music licensing issues with Spotify. Currently, the streaming APIs are limited to Android, iOS, and C (personal use developer accounts only).
 
 Implementation
@@ -68,6 +68,8 @@ The playlist subscription process happens in this order:
 Player Updates (from Server)
 ----------------
 Any of the following Socket.io events may happen:
+
+From Server to Player
  - `disconnect`: The server has disconnected. You will no longer receive updates unless either you manually reconnect,  or Socket.io does so automatically.
  - `state_change`: The server has sent you a State object in the JSON format. See *State* object below.
 
@@ -76,6 +78,7 @@ Player Updates (to Server)
 To update the server, a player can send any of the following events:
  - `track_finished`: The local track finished. A new `state_change` event will be broadcast with a new track, if available
  - `track_progress`: `{progress: time_ms, duration: dur_ms}`: An update of the currenly playing track's progress and duration in milliseconds. Can be sent on the order of seconds.
+ - `client_play_pause`: `{playing: true/false}`: Tell the server to change the current play state
 
 Objects
 =======
@@ -109,11 +112,11 @@ Objects
         -  `href` *String*: Spotify URLs
         -  `external_urls` *[String]*: Extra URLs
     -  `album` *Object*: Spotify's Album object
-        - `id` *String*: Spotify ID 
+        - `id` *String*: Spotify ID
         - `name` *String*: Album name
         - `uri` *String*: Spotify URI
         - `images` *[Object]*: Array of Images
-            - `height`: *Number*: Image height 
+            - `height`: *Number*: Image height
             - `width`: *Number*: Image width
             - `url`: *String*: Image URL
 - *QueueItem*: Item in the queue
