@@ -331,10 +331,10 @@ $(document).ready(function() {
     $.each(queue, function(i, entry) {
       resultsHtml += "<li class='list_item' data-id='" + entry._id + "'>";
         resultsHtml += "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>";
-        resultsHtml += "<div class='voting'>";
-        resultsHtml += "<a class='upvote' href='" + playlistUrl + "/vote/" + entry._id + "'><div class='fa fa-arrow-up'></div></a>";
-        resultsHtml += "<div class='votes'>" + ((entry.votes) ? entry.votes : 0) + "</div>";
-        resultsHtml += "</div>";
+//        resultsHtml += "<div class='voting'>";
+//        resultsHtml += "<a class='upvote' href='" + playlistUrl + "/vote/" + entry._id + "'><div class='fa fa-arrow-up'></div></a>";
+//        resultsHtml += "<div class='votes'>" + ((entry.votes) ? entry.votes : 0) + "</div>";
+//        resultsHtml += "</div>";
 
       if (!pretty) {
         resultsHtml += "<div class='list_item_drag fa fa-bars'></div>";

@@ -81,10 +81,10 @@ html
               img(src=track.track.album.images.pop().url)
             
             if (false)
-                .voting
-                    a.upvote(href="/playlist/#{playlist._id}/#{playlist.key}/vote/#{track._id}")
-                        .fa.fa-arrow-up
-                    .votes= track.votes
+//-                .voting
+//-                    a.upvote(href="/playlist/#{playlist._id}/#{playlist.key}/vote/#{track._id}")
+//-                        .fa.fa-arrow-up
+//-                    .votes= track.votes
             .fa.fa-bars.list_item_drag
             if is_admin
                 a.fa.fa-trash.list_item_delete(href="/playlist/#{playlist._id}/#{playlist.key}/delete/#{track._id}")

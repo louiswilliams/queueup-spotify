@@ -64,11 +64,18 @@ The playlist subscription process happens in this order:
   3.1. Socket#on `auth_success` *You are now subscribed to udpates from the playlist*  
   3.2. Socket#on `auth_fail` *A problem occured subscribing to the playlist*
 
-Playlist Updates
+
+Player Updates (from Server)
 ----------------
 Any of the following Socket.io events may happen:
  - `disconnect`: The server has disconnected. You will no longer receive updates unless either you manually reconnect,  or Socket.io does so automatically.
  - `state_change`: The server has sent you a State object in the JSON format. See *State* object below.
+
+Player Updates (to Server)
+----------------
+To update the server, a player can send any of the following events:
+ - `track_finished`: The local track finished. A new `state_change` event will be broadcast with a new track, if available
+ - `track_progress`: `{progress: time_ms, duration: dur_ms}`: An update of the currenly playing track's progress and duration in milliseconds. Can be sent on the order of seconds.
 
 Objects
 =======

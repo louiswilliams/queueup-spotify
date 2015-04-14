@@ -31,6 +31,7 @@ var io = require('socket.io')(server);
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+app.enable('trust proxy');
 
 app.use(logger('common'));
 app.use(express.static(path.join(__dirname, 'public')));
