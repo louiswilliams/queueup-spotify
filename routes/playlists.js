@@ -191,8 +191,19 @@ router.post('/:playlist/:name/skip', function(req, res) {
   // Only the administrator can play/pause the track
   // if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
     // Find and remove the first item in the queue
-    utils.skipTrack(req.db, req.io, req.playlist, function (result) {
-      res.json(result);
+    utils.skipTrack(req.playlist, function (playlist, err) {
+      if (playlist) {
+        /* Broadcast the change */
+        req.io.to(playlist._id).emit('state_change', {
+          track: playlist.current,
+          queue: playlist.tracks,
+          trigger: "next_track"
+        });
+
+        res.json({message: "Skipped track"});
+      } else {
+        res.json(err);
+      }
     });
   // } else {
   //   res.json({error: "Only admin can skip tracks"});

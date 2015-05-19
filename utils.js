@@ -46,7 +46,7 @@ exports.getUserPlaylistTracks = function (user, playlist, callback) {
   }
 }
 
-exports.skipTrack = function (db, io, playlist, callback) {
+exports.skipTrack = function (playlist, callback) {
   
   /* If there's anything in the queue */
   if (playlist.tracks && playlist.tracks.length > 0) {
@@ -65,23 +65,27 @@ exports.skipTrack = function (db, io, playlist, callback) {
       "new": true
     }).success(function (playlist) {
 
-      /* Broadcast the change */
-      io.to(playlist._id).emit('state_change', {
-        play: playlist.play,
-        volume: playlist.volume,
-        track: playlist.current,
-        queue: playlist.tracks,
-        trigger: "next_track"
-      });
-
-      callback({message: "Skipped to next track"});
+      callback(playlist);
 
     }).error(function (err) {
-      callback({error: err});
+      callback(null, {error: err});
     });
 
   } else {
-    callback({message: "No more tracks in queue"});
+    db.get('playlists').findAndModify({
+      _id: playlist._id
+    }, {
+      $set: {current: null}
+    }, {
+      "new": true
+    }).success(function (playlist) {
+
+      callback(playlist);
+
+    }).error(function (err) {
+      callback(null, err);
+    });
+
   }
 
 }
@@ -93,7 +97,7 @@ exports.userIsPlaylistAdmin = function (user, playlist) {
   return (user._id.equals(playlist.admin));
 }
 
-exports.updateUser = function (db, user, update, callback) {
+exports.updateUser = function (user, update, callback) {
   db.get('user').update({
     _id: user._id
   }, { $set: update }).error(function (err) {
@@ -130,12 +134,8 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         ).success(function(playlist) {
 
           /* playlist found in DB */
-          req.io.to(playlist._id).emit('state_change', {
-            play: playlist.play,
-            volume: playlist.volume,
-            track: playlist.current,
-            trigger: "add_track"
-          });
+          emitStateChange(req.io, playlist, "add_track");
+
           callback(null, playlist);
 
         }).error(function (err) {
@@ -162,13 +162,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
           /* Added successfully */
           console.log("Added track: ", track.id);
 
-          req.io.to(playlist._id).emit('state_change', {
-            play: playlist.play,
-            volume: playlist.volume,
-            track: playlist.current,
-            queue: playlist.tracks,
-            trigger: "add_track_queue"
-          });
+          emitStateChange(req.io, playlist, "add_track_queue");
           
           callback(null, playlist);
         }).error(function (err) {
@@ -186,6 +180,23 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
   });
 }
 
+exports.emitStateChange = function (io, playlist, trigger) {
+  io.to(playlist._id).emit('state_change', {
+    play: playlist.play,
+    track: playlist.current,
+    queue: playlist.tracks,
+    trigger: trigger
+  });
+}
+
+exports.sendStateChange = function (socket, playlist, trigger) {
+  socket.emit('state_change', {
+    play: playlist.play,
+    track: playlist.current,
+    queue: playlist.tracks,
+    trigger: trigger
+  });
+}
 
 exports.trackSimplify = function (track) {
   return {

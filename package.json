@@ -14,6 +14,7 @@
     "morgan": "1.2.2",
     "mongodb": "1.4.7",
     "monk": "0.9.1",
+    "oauth2-server": "~2.4.0",
     "passport-facebook": "1.0.3",
     "passport-google-oauth": "*",
     "passport-spotify": "0.1.0",
