@@ -33,7 +33,7 @@ html
               a.user_header(href='/user')= "Log in with Spotify"
             else
               | Logged in as 
-              a.user_header(href='/user')= user.displayName
+              a.user_header(href='/user')= user.name
               | . 
               a.user_header(href='/logout')= "Log out"
 

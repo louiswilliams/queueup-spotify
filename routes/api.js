@@ -12,7 +12,7 @@ var db = monk('localhost:27017/queueup');
 var Playlists = db.get('playlists');
 var Users = db.get('users');
 
-// playlist param
+/* Playlist_id param */
 router.param('playlist', function(req, res, next, id) {
 
   Playlists.findOne({_id: id},{}, function(err, playlist) {
@@ -23,7 +23,23 @@ router.param('playlist', function(req, res, next, id) {
       req.playlist = playlist;
       return next();
     } else {
-      res.json({error: {message: "Cound't find playlist " + id}});
+      res.json({error: {message: "Couldn't find playlist " + id}});
+    }
+
+  }); 
+});
+
+/* User_id parameter */
+router.param('user', function(req, res, next, id) {
+
+  Users.findOne({_id: id},{}, function(err, user) {
+    if (err){
+      res.json({error: {message: "Find user Error: " + err}});
+    } else if (user) {
+      req.user = user;
+      return next();
+    } else {
+      res.json({error: {message: "Couldn't find user " + id}});
     }
 
   }); 
@@ -34,10 +50,13 @@ router.param('playlist', function(req, res, next, id) {
 /** Handle API authentication **/
 router.use('/playlists', apiAuthenticate);
 
+/** Handle API authentication **/
+router.use('/users', apiAuthenticate);
+
 router.post('/playlists', function (req, res) {
   var playlists = req.db.get('playlists');
 
-  playlists.find({},{sort: {"last_updated": -1}}).success(function (documents) {
+  playlists.find({},{sort: {"last_updated": -1}, fields: {tracks: 0}}).success(function (documents) {
     res.json({playlists: documents});
   }).error(function (err) {
     res.json({error: err});
@@ -84,12 +103,46 @@ router.post('/playlists/:playlist/import', function (req, res) {
   // socket.emit(playlist:changed)
 });
 
+/** User Routes **/
+
+router.post("/users/:user", function (req, res) {
+  var user = {
+    _id: req.user._id,
+    name: req.user.name,
+  };
+
+  if (req.user.facebook) {
+    user.facebook = {
+      id: req.user.facebook.id
+    }
+  }
+  if (req.user.spotify) {
+    user.spotify = {
+      id: req.user.spotify.id
+    }
+  }
+
+  res.json({user: user});
+});
+
+router.post("/users/:user/playlists", function (req, res) {
+  Playlists.find({
+    admin: req.user._id
+  }, {fields: {tracks: 0}}).success(function (playlists) {
+
+    res.json({playlists: playlists});
+  }).error(function (err) {
+    res.json({error: err});
+  });
+});
+
 /** AUTH ROUTES **/
 
 /* ON "auth:init" */
 router.post('/auth/register', function (req, res) {
   var accessToken = req.body.facebook_access_token;
   var email = req.body.email;
+  var name = req.body.name;
   var password = req.body.password;
 
   /* Pre-generate the client_id */
@@ -116,6 +169,7 @@ router.post('/auth/register', function (req, res) {
           
           /* Insert record */
           Users.insert({
+            name: profile.name,
             email: profile.email,
             facebook: profile,
             client_id: client_id
@@ -133,7 +187,7 @@ router.post('/auth/register', function (req, res) {
         res.json({error: err});
       });
     });
-  } else if (email && password) {
+  } else if (email && password && name) {
 
     /* Check if user exists already */
     Users.findOne({
@@ -149,6 +203,7 @@ router.post('/auth/register', function (req, res) {
     
         /* Create the user if it doesn't already exist */
         Users.insert({
+          name: name,
           email: email,
           password: hash,
           client_id: client_id
@@ -184,23 +239,30 @@ router.post('/auth/login', function (req, res) {
 
     /* Use the Graph API to verify the user's data  */
     G.get('/me', function (profile) {
-      Users.findOne({
-        "facebook.id": profile.id
-      }).success(function (user) {
 
-        /* If user exists */
-        if (user) {
-          console.log("User found. client_id: ", user.client_id);
-          res.json({client_id: user.client_id});
-        } else {
-          res.json({error: {
-            message: "User not found"
-          }});
-        }
-      }).error(function (err) {
-        console.log(err);
-        res.json({error:  err});
-      });
+      /* If a non-null profile response from FB*/
+      if (!profile.error) {
+
+        Users.findOne({
+          "facebook.id": profile.id
+        }).success(function (user) {
+
+          /* Check if the user exists */
+          if (user) {
+            console.log("User found. client_id: ", user.client_id);
+            res.json({client_id: user.client_id});
+          } else {
+            res.json({error: {
+              message: "User not found"
+            }});
+          }
+        }).error(function (err) {
+          console.log(err);
+          res.json({error:  err});
+        });
+      } else {
+        res.json({error: profile.error});
+      }
     });
 
   /* If logging in with email and password */
@@ -211,14 +273,14 @@ router.post('/auth/login', function (req, res) {
     Users.findOne({
       email: email
     }).success(function (user) {
-      if (user.password == hash) {
+      if (user && user.password == hash) {
 
         /* Logged in */
         res.json({client_id: user.client_id, message: "Logged in"});
       } else {
 
         res.json({error: {
-          message: "Incorrect password"
+          message: "Email and password not found"
         }});
       }
     });

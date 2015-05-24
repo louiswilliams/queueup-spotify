@@ -39,10 +39,10 @@ passport.use(new SpotifyStrategy({
     users.findAndModify(
         { "spotify.id" : profile.id},
         { $set: {
-            displayName: ((profile.displayName) ? profile.displayName : profile.id),
+            name: ((profile.displayName) ? profile.displayName : profile.id),
             spotify: {
               id: profile.id,
-              displayName: ((profile.displayName) ? profile.displayName : profile.id),
+              name: ((profile.displayName) ? profile.displayName : profile.id),
               username: profile.username,
               profileUrl: profile.profileUrl,
               accessToken: accessToken,
@@ -81,7 +81,7 @@ passport.use(new FacebookStrategy({
     users.findAndModify(
         { "facebook.id" : profile.id},
         { $set: {
-            displayName: profile.displayName,
+            name: profile.name,
             facebook: {
               id: profile.id,
               name: profile.name,

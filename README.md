@@ -76,20 +76,25 @@ Every request from this point on requires a `client_id` and `email` attribute in
 
 - POST `/api/playlists`: Get a list of playlists
     - **Input**: Nothing
-    - **Returns**: `{playlists: [Playlist]}`: Array of Playlist objects.
+    - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
 - POST `/api/playlists/:playlist_id`: Get details for a playlist, by `_id`.
     - **Input**: Nothing
-    - **Returns**: `{playlist: Playlist}`: A Playlist object. 
-- POST `/api/playlists/:playlist_id/skip`: Skip the current track (if permissible)
+    - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
+- POST `/api/playlists/:playlist_id/skip`: Skip the current track (if allowed)
     - **Input**: Nothing
-    - **Returns**: `{playlist: Playlist}`: An updated Playlist object.
+    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
 - POST `/api/playlists/:playlist_id/update`: Submit changes to a playlist
-    - **Input**: `{playlist: Playlist}`: A Playlist with attributes to change (if permissible)
-    - **Returns**: `{playlist: Playlist}`: An updated Playlist object. 
+    - **Input**: `{playlist: Playlist}`: A Playlist with attributes to change (if allowed)
+    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object. 
 - POST `/api/playlists/:playlist_id/vote`: Vote on a track
     - **Input**: `{track_id: String, vote: Boolean}`: True to vote, false to unvote
-    - **Returns**: `{playlist: Playlist}`: An updated Playlist object.   
-
+    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.   
+- POST `/api/users/:user_id`: Get User information
+    - **Input**: Nothing
+    - **Returns**: `user: User`: A *User* object.
+- POST `/api/users/:user_id/playlists:`: Get User playlists
+    - **Input**: Nothing
+    - **Returns**: `playlists: [Playlist]`: Arraw of *Playlist* Objects (without tracks).
 
 API: socket.io
 ---
@@ -154,7 +159,7 @@ For clients and players subscribing to playlist updates
 Objects
 =======
 - *Playlist*: Playlist object that represents the entire playlist. Only used in the REST API.
-    -  `_id` *String*: Internal ID. Used for Player authentication. See *Players: Connection/Subscription*.
+    -  `_id` *String*: Internal ID. Used for Player authentication.
     -  `name` *String* Name of the playlist
     -  `current` *Track*: Currently playing Track
     -  `play` *Boolean*: `true` if playing, `false` otherwise
@@ -164,6 +169,14 @@ Objects
     -  `date_created` *Number*: Date created (UNIX)
     -  `last_updated` *Number*: Date last updated (UNIX)
     -  `key` *String*: Non-unique short name for the playlist
+
+- *User*: User object that stores basic information
+    - `_id`: *String*: Internal ID. 
+    - `name`: *String*: Full name
+    - `facebook` (If user is connected with Facebook)
+        - `id`: *String*: Fabook profile ID
+    - `spotify` (If user is connected with Spotify)
+        - `id`: *String*: Spotify profile ID
 
 - *State*: (Note: all fields are *optionally* sent). Generally speaking, only the changed fields are sent, but that is not always the case.
     - `[play]` *Boolean*: `true` if playing, `false` otherwise
