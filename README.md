@@ -26,127 +26,134 @@ Install & Run
 
 `npm start`
 
-API: socket.io *New!*
----
-Server event listeners:
-
-- on `playlist:all`: Request all playlists feed  
-    - **Parameters**: none
-    - **Emits**: `playlist:all:success` (once)
-        - List of *Playlist* objects
-    - **Emits**: `playlist:all:error`
-      - `message`: Text description of problem
-- on `playlist:subscribe`: Subscribe to updates from a playlist
-    - **Parameters**:
-        - `id`: Playlist ID to subscribe to
-    - **Emits**: `playlist:subscribe:success`: Successful subscription
-    - **Emits**: `playlist:subscribe:error`
-      - `message`: Text description of problem
-    - **Emits**: `state_change`: (every playlist update until disconnect or unsubscribe)
-        - *Playlist* object
-- on `playlist:unsubscribe`: Stop receiving state change updates
-    - **Parameters**:
-        - `id`: Playlist ID to unsubscribe from
-    - **Emits**: `playlist:unsubscribe:success`: Stops emitting `state_change`
-    - **Emits**: `playlist:unsubscribe:error`
-      - `message`: Text description of problem
-- on `playlist:update`
-- on `playlist:skip`: Skip current track to next in queue
-    - **Parameters**:
-        - `id`: Playlist ID to skip track on
-    - **Emits**: `playlist:skip:error`
-      - `message`: Text description of problem
-    - **Emits**: `state_change`: (Only if first subscribed)
-- on `playlist:vote`
-- on `playlist:import`
-- on `playlist:player:connect`: Request to be player for a playlist
-    - **Parameters**:
-        - `id`: Playlist ID request 
-    - **Emits**: `playlist:player:connect:success`: (Once)
-    - **Emits**: `playlist:player:connect:error`
-      - `message`: Text description of problem
-- on `playlist:player:disconnect`: Stop being player for a playlist
-    - **Parameters**:
-        - `id`: Playlist ID request 
-    - **Emits**: `playlist:player:disconnect:success`: (Once)
-    - **Emits**: `playlist:player:disconnect:error`: Result of problematic request
-      - `message`: Text description of problem
-- on `auth:init`: Initialize authentication (first-time) by passing credentials (FB or email/password)
-    - **Parameters**:
-        - `facebook_access_token`: Access token to perform verification (instead of email/password)
-        - `email`: Email address to perform authentication (instead of access token)
-        - `password`: Password to perform authentication (instead of access token)
-    - **Emits**: `auth:init:success`: Successful login/registration
-        - `client_id`: Client-side token for app authentication later
-        - `message`: Text message about action taken
-    - **Emits**: `auth:init:error`
-      - `message`: Text description of problem
-- on `auth:request`: Request authentication with `client_id` token
-    - **Parameters**:
-        - `client_id`: Client-side token from `auth:init` step
-        - `email`: Email address of client
-    - **Emits**: `auth:request:success`: On successful authentication
-    - **Emits**: `auth:request:error`
-      - `message`: Text description of problem
-
-
-API: RESTful *deprecated*
----
-The Server API is still in development, but has the following functions, which return JSON Objects.
-- GET `/api/playlists`: Get a list of playlists. 
-  - *[Playlist]*: Array of *Playlist* objects. See *Objects*.
-- GET `/api/playlists/:id`: Get details for a playlist, by Playlist._id.
-  - *Playlist*: Playlist object. See *Objects*.
-
 
 Players
-=======================
+=====================
 
 A QueueUp Player is required to play from [QueueUp](http://qup.louiswilliams.org). It connects to the server, subscribes to a playlist, and updates automatically to play music from a playlist.
 
 Available Players:
+
   - [Android Player](https://github.com/extrakt/queueup-player-android): An ready-to-run AndroidStudio project.
   - [Node.js Player](https://github.com/extrakt/queueup-spotify-client): Requires some setup, but effectively the same as the Android player, just on a desktop platform.
   - [iOS](https://github.com/reynoldsjay/queueup-player-ios): XCode project with iPhone player.
 
 Notes:
-  - All players require Spotify Premium accounts. This is a result of music licensing contracts, and there is no way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
+
+  - All players require Spotify Premium accounts. This is a result of Spotify's streaming licensing, and there is no legal way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
   - No web streaming API exists, again, because of music licensing issues with Spotify. Currently, the streaming APIs are limited to Android, iOS, and C (personal use developer accounts only).
 
 Implementation
 -------------
 
-The player API is controlled by the server through Socket.io connections. Below are the Socket.io events to fully implement the QueueUp Player and subscribe to updates. There are Socket.IO ports from Javascript to most popular languages.
+A Player can be implemented using a mixture of REST and Socket.IO APIs.
 
-Connection/Subscription
-----------
-The playlist subscription process happens in this order:
-
-1. Socket#connect `http://queueup.louiswilliams.org` *Connect to Queueup or your own server*.
-2. Socket#on `auth_request` *Server is requesting a playlist ID*  
-3. Socket#emit `auth_send`: `{id: [playlist_id]}` *Send back the ID of the playlist to play. See* API *for getting an ID*  
-  3.1. Socket#on `auth_success` *You are now subscribed to udpates from the playlist*  
-  3.2. Socket#on `auth_fail` *A problem occured subscribing to the playlist*
+In terms of the API, a **Client** is a read-only listener that subscribes to playlist updates. A **Player** is a **Client** that can also send updates about the current state of the playing track. Only one **Player** is allowed to play at a time for a given playlist.
 
 
-Player Updates (from Server)
-----------------
-Any of the following Socket.io events may happen:
+API: REST
+---
+For requests that do not require event-based socketed connections, like searching for and updating playlist information. See **Objects** section for schema.
 
-From Server to Player
- - `disconnect`: The server has disconnected. You will no longer receive updates unless either you manually reconnect,  or Socket.io does so automatically.
- - `state_change`: The server has sent you a State object in the JSON format. See *State* object below.
+*Note: Every response can have an `error` attribute, with an error description, `error.message`*
 
-Player Updates (to Server)
-----------------
-To update the server, a player can send any of the following events:
- - `track_finished`: The local track finished. A new `state_change` event will be broadcast with a new track, if available
- - `track_progress`: `{progress: time_ms, duration: dur_ms}`: An update of the currenly playing track's progress and duration in milliseconds. Can be sent on the order of seconds.
- - `client_play_pause`: `{playing: true/false}`: Tell the server to change the current play state
+**Step 1:** Register or log in to obtain a `client_id` token.
+
+- POST `/auth/register`: Register an account for the first time  
+    - **Input**: Choose one:
+        - `{email: String, password: String}`: Register with an email/password
+        - `{facebook_access_token: String}`: Register with a valid FB access token
+    - **Returns**: `{client_id: String}`: **Save this. Required for all API requests**
+- POST `/auth/login`: Log in to receive a `client_id` for API requests
+    - **Input**: Choose one:
+        - `{email: String, password: String}`: Log in with an email/password
+        - `{facebook_access_token: String}`: Log in with a valid FB access token
+    - **Returns**: `{client_id: String}`: **Save this. Required for all API requests**
+
+**Step 2:** Use the API
+
+Every request from this point on requires a `client_id` and `email` attribute in the input. The `client_id` is essentially a password, so keep it secure locally.
+
+- POST `/api/playlists`: Get a list of playlists
+    - **Input**: Nothing
+    - **Returns**: `{playlists: [Playlist]}`: Array of Playlist objects.
+- POST `/api/playlists/:playlist_id`: Get details for a playlist, by `_id`.
+    - **Input**: Nothing
+    - **Returns**: `{playlist: Playlist}`: A Playlist object. 
+- POST `/api/playlists/:playlist_id/skip`: Skip the current track (if permissible)
+    - **Input**: Nothing
+    - **Returns**: `{playlist: Playlist}`: An updated Playlist object.
+- POST `/api/playlists/:playlist_id/update`: Submit changes to a playlist
+    - **Input**: `{playlist: Playlist}`: A Playlist with attributes to change (if permissible)
+    - **Returns**: `{playlist: Playlist}`: An updated Playlist object. 
+- POST `/api/playlists/:playlist_id/vote`: Vote on a track
+    - **Input**: `{track_id: String, vote: Boolean}`: True to vote, false to unvote
+    - **Returns**: `{playlist: Playlist}`: An updated Playlist object.   
+
+
+API: socket.io
+---
+For clients and players subscribing to playlist updates
+
+**Step 1:** First authenticate to gain access:
+
+- on `auth`: Initialize authentication by passing API credentials
+    - **Parameters**:
+        - `client_id`: Client token from the REST API `/auth/login`
+        - `email`: Email address of client
+    - **Emits**: `auth:response`: On result. No error is a success.
+        - `error`: Sent only if there was an error
+            - `message: String`: Description of problem
+
+**Step 2:** Register as a *Client* or *Player*.
+
+**Register as a Client:** Read-only updates
+
+- on `client_subscribe`: Subscribe to updates from a playlist
+    - **Parameters**:
+        - `playlist_id: String`: Playlist ID to subscribe to
+    - **Emits**: `state_change`: On every playlist update until disconnect or unsubscribe
+        - *State* object
+- on `client_unsubscribe`: Stop receiving state change updates
+    - **Parameters**: None
+    - **Emits**: `client_unsubscribe:response`: Stops receiving `state_change`
+        - `error`: Sent only if there was an error
+            - `message: String`: Description of problem
+
+
+**Register as a Player:** Only one allowed per playlist (registers as a client inherently):
+
+- on `player_subscribe`: Subscribe to updates to play from a playlist
+    - **Parameters**:
+        - `playlist_id: String`: Playlist ID to play from
+    - **Emits**: `state_change`: (every playlist update until disconnect or unsubscribe)
+        - *State* object
+    - **Emits**: `player_subscribe:response`: Result of subscription
+        - `error`: Sent only if there was an error
+            - `message: String`: Description of problem
+- on `player_unsubscribe`: Stop acting as a player.
+    - **Parameters**: None
+    - **Emits**: `player_unsubscribe:response`: Stops receiving `state_change`
+        - `error`: Sent only if there was an error
+            - `message: String`: Description of problem
+
+**As a Player, the following events are now available (and should be implemented):**
+
+- on `track_finished`: The local track finished.
+    - **Parameters**: None
+    - **Broadcasts**: `state_change: State`: *State* object with new track.
+- on `track_progress`: An ratio to update to the track's progression
+    - **Parameters**: Send this no less frequently than once per second
+        - `progress: Number`: Track progress (ms)
+        - `duration: Number`: Track duration (ms)
+- on `track_play_pause`: `{playing: true/false}`: The track was paused
+    - **Parameters**:
+        - `play: Boolean`: Play state to update the server with (true = playing)
+    - **Broadcasts**: `state_change: State`: *State* object
 
 Objects
 =======
-- *Playlist*: Playlist object that represents the entire playlist. Only used in the web API.
+- *Playlist*: Playlist object that represents the entire playlist. Only used in the REST API.
     -  `_id` *String*: Internal ID. Used for Player authentication. See *Players: Connection/Subscription*.
     -  `name` *String* Name of the playlist
     -  `current` *Track*: Currently playing Track
@@ -159,11 +166,11 @@ Objects
     -  `key` *String*: Non-unique short name for the playlist
 
 - *State*: (Note: all fields are *optionally* sent). Generally speaking, only the changed fields are sent, but that is not always the case.
-   - `[volume]` *Number [0-100]*: Percent volume
-   - `[play]` *Boolean*: `true` if playing, `false` otherwise
-   - `[track]` *Track*: Currently playing track.
-   - `[queue]` *[QueueItem]*: Ordered Array of *QueueItem*s.
-   - `[trigger]` *String*: Mostly for debugging. Identifies what action caused this broadcast.
+    - `[play]` *Boolean*: `true` if playing, `false` otherwise
+    - `[track]` *Track*: Currently playing track.
+    - `[queue]` *[QueueItem]*: Ordered Array of *QueueItem*s.
+    - `[trigger]` *String*: Mostly for debugging. Identifies what action caused this broadcast.
+
 - *Track*: Simplified version of [Spotify's Track (full)](https://developer.spotify.com/web-api/object-model/#track-object-full).
     -  `name` *String*: Track name
     -  `id` *String*: Spotify ID
