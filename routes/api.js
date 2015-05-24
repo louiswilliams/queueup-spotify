@@ -140,54 +140,14 @@ router.post("/users/:user/playlists", function (req, res) {
 
 /* ON "auth:init" */
 router.post('/auth/register', function (req, res) {
-  var accessToken = req.body.facebook_access_token;
   var email = req.body.email;
   var name = req.body.name;
   var password = req.body.password;
 
   /* Pre-generate the client_id */
-  var client_id = crypto.createHash('sha1').update(JSON.stringify(res.body + Math.random().toString())).digest('hex');
-
-  if (accessToken) {
-
-    /* Find user by Facebook ID */
-    var G = new Graph(accessToken);
-    G.get('/me', function (profile) {
-      console.log(profile.id);
-
-      /* Check to see if user exists already */
-      Users.findOne({
-        "facebook.id": profile.id
-      }).success(function (user) {
-
-        /* If the user exists, redirect to login router*/
-        if (user) {
-          res.json({error: {message: "This Facebook account is already registered"}})
-        } else {
-          /* Otherwise, add the user */
-          console.log("new user", client_id);
-          
-          /* Insert record */
-          Users.insert({
-            name: profile.name,
-            email: profile.email,
-            facebook: profile,
-            client_id: client_id
-          }).success( function (user) {
-
-            /* Success */
-            console.log("Created account for", user.email);
-            res.json({client_id: user.client_id});
-
-          }).error(function (err) {
-            res.json({error: err});
-          });
-        }
-      }).error(function (err) {
-        res.json({error: err});
-      });
-    });
-  } else if (email && password && name) {
+  var client_id = genClientId(req.body);
+ 
+  if (email && password && name) {
 
     /* Check if user exists already */
     Users.findOne({
@@ -222,7 +182,7 @@ router.post('/auth/register', function (req, res) {
       res.json({error: err});
     });
   } else {
-    res.json({error: {message: "Email/pass OR access token not sent"}});
+    res.json({error: {message: "Name or Email or pass not sent"}});
   }
 });
 
@@ -240,7 +200,7 @@ router.post('/auth/login', function (req, res) {
     /* Use the Graph API to verify the user's data  */
     G.get('/me', function (profile) {
 
-      /* If a non-null profile response from FB*/
+      /* If a no error from FB*/
       if (!profile.error) {
 
         Users.findOne({
@@ -252,13 +212,30 @@ router.post('/auth/login', function (req, res) {
             console.log("User found. client_id: ", user.client_id);
             res.json({client_id: user.client_id});
           } else {
-            res.json({error: {
-              message: "User not found"
-            }});
+
+            var client_id = genClientId(req.body);
+
+            console.log("new user", client_id);
+          
+            /* Insert record */
+            Users.insert({
+              name: profile.name,
+              email: profile.email,
+              facebook: profile,
+              client_id: client_id
+            }).success( function (user) {
+
+              /* Success */
+              console.log("Created account for", user.email);
+              res.json({client_id: user.client_id});
+
+            }).error(function (err) {
+              res.json({error: err});
+            });
           }
+
         }).error(function (err) {
-          console.log(err);
-          res.json({error:  err});
+          res.json({error: err});
         });
       } else {
         res.json({error: profile.error});
@@ -324,6 +301,10 @@ function apiAuthenticate (req, res, next) {
       message: "Client id and email not sent"
     }})
   }
+}
+
+function genClientId(seed) {
+  return crypto.createHash('sha1').update(JSON.stringify(seed + Math.random().toString())).digest('hex');
 }
 
 module.exports = router;

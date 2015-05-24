@@ -59,13 +59,12 @@ For requests that do not require event-based socketed connections, like searchin
 
 **Step 1:** Register or log in to obtain a `client_id` token.
 
-- POST `/auth/register`: Register an account for the first time  
+- POST `/auth/register`: Register an account for the first time (without Facebook)
     - **Input**: Choose one:
-        - `{email: String, password: String}`: Register with an email/password
-        - `{facebook_access_token: String}`: Register with a valid FB access token
+        - `{email: String, password: String, name: String}`: Register with an name/email/password
     - **Returns**: `{client_id: String}`: **Save this. Required for all API requests**
 - POST `/auth/login`: Log in to receive a `client_id` for API requests
-    - **Input**: Choose one:
+    - **Input**: Choose ONE:
         - `{email: String, password: String}`: Log in with an email/password
         - `{facebook_access_token: String}`: Log in with a valid FB access token
     - **Returns**: `{client_id: String}`: **Save this. Required for all API requests**
@@ -170,7 +169,7 @@ Objects
     -  `last_updated` *Number*: Date last updated (UNIX)
     -  `key` *String*: Non-unique short name for the playlist
 
-- *User*: User object that stores basic information
+- *User*: User object that stores basic  information
     - `_id`: *String*: Internal ID. 
     - `name`: *String*: Full name
     - `facebook` (If user is connected with Facebook)
