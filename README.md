@@ -32,32 +32,45 @@ Server event listeners:
 
 - on `playlist:all`: Request all playlists feed  
     - **Parameters**: none
-    - **Emits**: `playlist:all:result` (once)
+    - **Emits**: `playlist:all:success` (once)
         - List of *Playlist* objects
+    - **Emits**: `playlist:all:error`
+      - `message`: Text description of problem
 - on `playlist:subscribe`: Subscribe to updates from a playlist
     - **Parameters**:
         - `id`: Playlist ID to subscribe to
+    - **Emits**: `playlist:subscribe:success`: Successful subscription
+    - **Emits**: `playlist:subscribe:error`
+      - `message`: Text description of problem
     - **Emits**: `state_change`: (every playlist update until disconnect or unsubscribe)
         - *Playlist* object
 - on `playlist:unsubscribe`: Stop receiving state change updates
     - **Parameters**:
         - `id`: Playlist ID to unsubscribe from
-    - **Emits**: nothing (stops emitting `state_change`)
+    - **Emits**: `playlist:unsubscribe:success`: Stops emitting `state_change`
+    - **Emits**: `playlist:unsubscribe:error`
+      - `message`: Text description of problem
 - on `playlist:update`
 - on `playlist:skip`: Skip current track to next in queue
     - **Parameters**:
         - `id`: Playlist ID to skip track on
+    - **Emits**: `playlist:skip:error`
+      - `message`: Text description of problem
     - **Emits**: `state_change`: (Only if first subscribed)
 - on `playlist:vote`
 - on `playlist:import`
-- on `playlist:player:request`: Request to be player for a playlist
+- on `playlist:player:connect`: Request to be player for a playlist
     - **Parameters**:
         - `id`: Playlist ID request 
-    - **Emits**: `playlist:player:connected`: (Once)
+    - **Emits**: `playlist:player:connect:success`: (Once)
+    - **Emits**: `playlist:player:connect:error`
+      - `message`: Text description of problem
 - on `playlist:player:disconnect`: Stop being player for a playlist
     - **Parameters**:
         - `id`: Playlist ID request 
-    - **Emits**: `playlist:player:disconnected`: (Once)
+    - **Emits**: `playlist:player:disconnect:success`: (Once)
+    - **Emits**: `playlist:player:disconnect:error`: Result of problematic request
+      - `message`: Text description of problem
 - on `auth:init`: Initialize authentication (first-time) by passing credentials (FB or email/password)
     - **Parameters**:
         - `facebook_access_token`: Access token to perform verification (instead of email/password)
@@ -66,16 +79,16 @@ Server event listeners:
     - **Emits**: `auth:init:success`: Successful login/registration
         - `client_id`: Client-side token for app authentication later
         - `message`: Text message about action taken
+    - **Emits**: `auth:init:error`
+      - `message`: Text description of problem
 - on `auth:request`: Request authentication with `client_id` token
     - **Parameters**:
         - `client_id`: Client-side token from `auth:init` step
         - `email`: Email address of client
     - **Emits**: `auth:request:success`: On successful authentication
+    - **Emits**: `auth:request:error`
+      - `message`: Text description of problem
 
-Client listeners (for client implementation):
-- on `error`: Result of problematic request (from any of the above events)
-  - `message`: Text description of problem
-  - `event`: Name of server listener event that caused this problem
 
 API: RESTful *deprecated*
 ---

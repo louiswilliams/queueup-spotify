@@ -104,12 +104,12 @@ io.on('connection', function(socket) {
     Playlists.find({}, {sort: {
       last_udpated: -1
     }}).success(function (playlists) {
-      socket.emit('playlist:all:result', playlists);
+        console.log(playlists);
+      socket.emit('playlist:all:success', playlists);
     }).error(function (err) {
       console.log(err);
-      socket.emit('error', {
-        message: "Error listing playlists: " + JSON.stringify(err),
-        event: 'playlist:all'
+      socket.emit('playlist:all:error', {
+        message: "Error listing playlists: " + JSON.stringify(err)
       });
     });
   });
@@ -118,6 +118,7 @@ io.on('connection', function(socket) {
   socket.on('playlist:subscribe', function (data) {
     Playlists.findOne({_id: new ObjectId(data.id)}).success(function (playlist) {
       if (playlist) {
+        socket.emit('playlist:subscribe:success');
         socket.join(data.id);
 
         utils.sendStateChange(socket, playlist, "playlist_subscribe");
@@ -129,6 +130,7 @@ io.on('connection', function(socket) {
   socket.on('playlist:unsubscribe', function (data) {
     Playlists.findOne({_id: new ObjectId(data.id)}).success(function (playlist) {
       if (playlist) {
+        socket.emit('playlist:unsubscribe:success');
         socket.leave(data.id);      
       }
     });
@@ -170,14 +172,13 @@ io.on('connection', function(socket) {
   });
 
   /* ON "playlist:player:request" */
-  socket.on('playlist:player:request', function (data) {
+  socket.on('playlist:player:connect', function (data) {
     if (user_id && data.id) {
       Playlists.findOne({_id: data.id, admin: user_id})
       .success( function (playlist) {
         if (playlist.player) {
-          socket.emit("error", {
-            message: "Player already connected. Disconnect first...",
-            event: "playlist:player:request"
+          socket.emit("playlist:player:connect:error", {
+            message: "Player already connected. Disconnect first..."
           });
         } else {
           Playlists.update({_id: playlist._id}, {
@@ -187,16 +188,15 @@ io.on('connection', function(socket) {
           }).success(function () {
             playlist_player = playlist._id;            
             socket.join(playlist._id);
-            socket.emit("playlist:player:connected");
+            socket.emit("playlist:player:connect:success");
           });
         }
       }).error (function (err) {
         console.log(err);
       })
     } else {
-      socket.emit('error', {
-        message: "Either user not authenticated or no playlist_id sent",
-        event: "playlist:player:request"
+      socket.emit('playlist:player:connect:error', {
+        message: "Either user not authenticated or no playlist_id sent"
       });
     }
   });
@@ -214,12 +214,11 @@ io.on('connection', function(socket) {
           }).success(function () {
             playlist_player = null;
             socket.leave(playlist._id);
-            socket.emit("playlist:player:disconnected");
+            socket.emit("playlist:player:disconnect:success");
           })
         } else {
-          socket.emit('error', {
-            message: "No playlist found for this user",
-            event: "playlist:player:disconnect"
+          socket.emit('playlist:player:disconnect:error', {
+            message: "No playlist found for this user"
           });
 
         }
@@ -227,9 +226,8 @@ io.on('connection', function(socket) {
         console.log(err);
       })
     } else {
-      socket.emit('error', {
-        message: "Either user not authenticated or no playlist_id sent",
-        event: "playlist:player:disconnect"
+      socket.emit('playlist:player:disconnect:error', {
+        message: "Either user not authenticated or no playlist_id sent"
       });
     }
   });
@@ -248,7 +246,7 @@ io.on('connection', function(socket) {
           "facebook.id": profile.id
         }).success(function (user) {
           if (user) {
-
+            console.log("User found. client_id: ", user.client_id);
             /* Set the current session as authenticated and broadcast success */
             socket.emit('auth:init:success', {client_id: user.client_id, message: "Verified Facebook account"});
 
@@ -288,9 +286,8 @@ io.on('connection', function(socket) {
           } else {
 
             /* Broadcast error */
-            socket.emit('error', {
-              message: "Incorrect password",
-              event: "auth:init"
+            socket.emit('auth:init:error', {
+              message: "Incorrect password"
             });
           }
         } else {
@@ -331,9 +328,8 @@ io.on('connection', function(socket) {
       }).error(console.log);
     } else {
       console.log("Client ID and email not both sent");
-      socket.emit("error", {
-        message: "Client id and email not found",
-        event: "auth:request"
+      socket.emit("auth:request:error", {
+        message: "Client id and email not found"
       });
     }
   });
