@@ -17,6 +17,8 @@ Setup
 -------
 The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. All of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications).
 
+A `/routes/facebookSecret.key` is also required.
+
 
 A MongoDB Server should be running on `localhost:27017`. This is configurable in `server.js`.
 
@@ -78,16 +80,16 @@ Every request from this point on requires a `client_id` and `email` attribute in
     - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
 - POST `/api/playlists/:playlist_id`: Get details for a playlist, by `_id`.
     - **Input**: Nothing
-    - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
+    - **Returns**: `{playlist: Playlist}`: A *Playlist* object.
 - POST `/api/playlists/:playlist_id/skip`: Skip the current track (if allowed)
     - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
 - POST `/api/playlists/:playlist_id/update`: Submit changes to a playlist
     - **Input**: `{playlist: Playlist}`: A Playlist with attributes to change (if allowed)
-    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object. 
+    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
 - POST `/api/playlists/:playlist_id/vote`: Vote on a track
     - **Input**: `{track_id: String, vote: Boolean}`: True to vote, false to unvote
-    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.   
+    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
 - POST `/api/users/:user_id`: Get User information
     - **Input**: Nothing
     - **Returns**: `user: User`: A *User* object.
@@ -170,7 +172,7 @@ Objects
     -  `key` *String*: Non-unique short name for the playlist
 
 - *User*: User object that stores basic  information
-    - `_id`: *String*: Internal ID. 
+    - `_id`: *String*: Internal ID.
     - `name`: *String*: Full name
     - `facebook` (If user is connected with Facebook)
         - `id`: *String*: Fabook profile ID

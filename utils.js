@@ -27,7 +27,7 @@ exports.getSpotifyApiForUser = function (user, callback) {
         callback(null, spotifyApi, user);
       }, function (err) {
         callback(err);
-      });      
+      });
     } else {
       callback(null, spotifyApi);
     }
@@ -47,7 +47,7 @@ exports.getUserPlaylistTracks = function (user, playlist, callback) {
 }
 
 exports.skipTrack = function (playlist, callback) {
-  
+
   /* If there's anything in the queue */
   if (playlist.tracks && playlist.tracks.length > 0) {
 
@@ -102,7 +102,7 @@ exports.updateUser = function (user, update, callback) {
     _id: user._id
   }, { $set: update }).error(function (err) {
     if (callback) {
-      callback(err);    
+      callback(err);
     }
   }).success(function(record) {
     if (callback) {
@@ -158,12 +158,12 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
             }
           }, {"new": true}
         ).success(function (playlist) {
-        
+
           /* Added successfully */
           console.log("Added track: ", track.id);
 
-          emitStateChange(req.io, playlist, "add_track_queue");
-          
+          exports.emitStateChange(req.io, playlist, "add_track_queue");
+
           callback(null, playlist);
         }).error(function (err) {
           console.log(err);
@@ -176,7 +176,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         message: "TrackID: " + req.params.trackid
       });
     }
-    
+
   });
 }
 
@@ -203,7 +203,7 @@ exports.trackSimplify = function (track) {
   }
 }
 
-/** 
+/**
   This returns a copy of the object, but with the set of 'keep' fields retained.
   Inner objects can be retained using "." between fields.
 */
