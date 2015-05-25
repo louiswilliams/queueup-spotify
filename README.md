@@ -59,11 +59,11 @@ For requests that do not require event-based socketed connections, like searchin
 
 **Step 1:** Register or log in to obtain a `client_id` token.
 
-- POST `/auth/register`: Register an account for the first time (without Facebook)
+- POST `/api/auth/register`: Register an account for the first time (without Facebook)
     - **Input**: Choose one:
         - `{email: String, password: String, name: String}`: Register with an name/email/password
     - **Returns**: `{client_id: String}`: **Save this. Required for all API requests**
-- POST `/auth/login`: Log in to receive a `client_id` for API requests
+- POST `/api/auth/login`: Log in to receive a `client_id` for API requests
     - **Input**: Choose ONE:
         - `{email: String, password: String}`: Log in with an email/password
         - `{facebook_access_token: String}`: Log in with a valid FB access token
