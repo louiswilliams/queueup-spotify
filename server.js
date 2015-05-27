@@ -95,26 +95,26 @@ io.on('connection', function(socket) {
             console.log("Authenticated socket client");
             
             /* Attach new socket listeners*/
-            socket.emit("auth:response");
+            socket.emit("auth_response");
             subscribeListen(user._id, socket);
 
           } else {
             console.log("Client not found");
 
             /* Don't proceed to other middleware if client ID isn't verified */
-            socket.emit("auth:response", {error: {
+            socket.emit("auth_response", {error: {
               message: "Client not found"
             }});
           }
         }).error(function (err) {
           console.log(err);
-          socket.emit("auth:response", {error:  err});
+          socket.emit("auth_response", {error:  err});
         });
       } else {
         console.log("Client ID and email not both sent");
 
         /* Again, client ID is not universally unique, so it must be sent with an email */
-        socket.emit("auth:response", {error: {
+        socket.emit("auth_response", {error: {
           message: "Client id and email not both sent"
         }});
       }
@@ -371,7 +371,7 @@ function subscribeListen(user_id, socket) {
 
         /* If the playlist already has a registerd player */
         if (playlist.player && !force) {
-          socket.emit("player_subscribe:response", {
+          socket.emit("player_subscribe_response", {
             message: "Player already connected. Disconnect first..."
           });
 
@@ -392,11 +392,11 @@ function subscribeListen(user_id, socket) {
         }
       } else {
         console.log("No playlist " + playlist_id + " with " + user_id + " as an admin");
-        socket.emit("player_subscribe:response", {error: {message: "No playlist with this user as an admin"}});
+        socket.emit("player_subscribe_response", {error: {message: "No playlist with this user as an admin"}});
       }
     }).error (function (err) {
       console.log(err);
-      socket.emit("player_subscribe:response", {error: err});
+      socket.emit("player_subscribe_response", {error: err});
     });
 
     console.log("Player subscribing");

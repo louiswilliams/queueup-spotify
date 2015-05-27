@@ -262,7 +262,7 @@ router.post('/auth/login', function (req, res) {
       }
     });
   } else {
-    res.json({error: {message: "Email/pass OR acces token not sent"}});
+    res.json({error: {message: "Email/pass OR access token not sent"}});
   }
 });
 

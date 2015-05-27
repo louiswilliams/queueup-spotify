@@ -134,7 +134,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         ).success(function(playlist) {
 
           /* playlist found in DB */
-          emitStateChange(req.io, playlist, "add_track");
+          exports.emitStateChange(req.io, playlist, "add_track");
 
           callback(null, playlist);
 
@@ -162,7 +162,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
           /* Added successfully */
           console.log("Added track: ", track.id);
 
-          emitStateChange(req.io, playlist, "add_track_queue");
+          exports.emitStateChange(req.io, playlist, "add_track_queue");
           
           callback(null, playlist);
         }).error(function (err) {

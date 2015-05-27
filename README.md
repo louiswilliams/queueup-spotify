@@ -105,7 +105,7 @@ For clients and players subscribing to playlist updates
     - **Parameters**:
         - `client_id`: Client token from the REST API `/auth/login`
         - `email`: Email address of client
-    - **Emits**: `auth:response`: On result. No error is a success.
+    - **Emits**: `auth_response`: On result. No error is a success.
         - `error`: Sent only if there was an error
             - `message: String`: Description of problem
 
@@ -120,7 +120,7 @@ For clients and players subscribing to playlist updates
         - *State* object
 - on `client_unsubscribe`: Stop receiving state change updates
     - **Parameters**: None
-    - **Emits**: `client_unsubscribe:response`: Stops receiving `state_change`
+    - **Emits**: `client_unsubscribe_response`: Stops receiving `state_change`
         - `error`: Sent only if there was an error
             - `message: String`: Description of problem
 
@@ -132,12 +132,12 @@ For clients and players subscribing to playlist updates
         - `playlist_id: String`: Playlist ID to play from
     - **Emits**: `state_change`: (every playlist update until disconnect or unsubscribe)
         - *State* object
-    - **Emits**: `player_subscribe:response`: Result of subscription
+    - **Emits**: `player_subscribe_response`: Result of subscription
         - `error`: Sent only if there was an error
             - `message: String`: Description of problem
 - on `player_unsubscribe`: Stop acting as a player.
     - **Parameters**: None
-    - **Emits**: `player_unsubscribe:response`: Stops receiving `state_change`
+    - **Emits**: `player_unsubscribe_response`: Stops receiving `state_change`
         - `error`: Sent only if there was an error
             - `message: String`: Description of problem
 
