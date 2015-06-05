@@ -112,7 +112,7 @@ router.post("/users/:user", function (req, res) {
   };
 
   if (req.user.facebook) {
-    user.facebook = {
+    user.facebook = { 
       id: req.user.facebook.id
     }
   }
@@ -144,8 +144,8 @@ router.post('/auth/register', function (req, res) {
   var name = req.body.name;
   var password = req.body.password;
 
-  /* Pre-generate the client_id */
-  var client_id = genClientId(req.body);
+  /* Pre-generate the client_token */
+  var client_token = genClientToken(req.body);
  
   if (email && password && name) {
 
@@ -157,7 +157,7 @@ router.post('/auth/register', function (req, res) {
          res.json({error: {message: "This email is already registered"}})
       } else {
 
-        console.log("New user", client_id);
+        console.log("New user", client_token);
 
         var hash = crypto.createHash('md5').update(password).digest('hex');
     
@@ -166,11 +166,11 @@ router.post('/auth/register', function (req, res) {
           name: name,
           email: email,
           password: hash,
-          client_id: client_id
+          client_token: client_token
         }).success( function (user) {
 
           /* Success*/
-          res.json({client_id: client_id});
+          res.json({user_id: user._id, client_token: client_token});
 
         }).error(function (err) {
           console.log(err);
@@ -207,27 +207,46 @@ router.post('/auth/login', function (req, res) {
           "facebook.id": profile.id
         }).success(function (user) {
 
+          var client_token = genClientToken(req.body);
+
           /* Check if the user exists */
-          if (user) {
-            console.log("User found. client_id: ", user.client_id);
-            res.json({client_id: user.client_id});
+          if (user && user.client_token) {
+
+            /* In system, with a token*/
+            console.log("User found. client_token: ", user.client_token);
+            res.json({user_id: user._id, client_token: user.client_token});              
+          } else if (user) {
+
+            /* In system without a token */
+            console.log("User is in db without token");
+            Users.update({
+              _id: user._id
+            }, {
+              $set: {
+                client_token: client_token
+              }
+            }).success(function (user) {
+              res.json({user_id: user._id, client_token: user.client_token});
+            }).error(function (err) {
+              res.json({error: err});
+            });
+
           } else {
 
-            var client_id = genClientId(req.body);
-
-            console.log("new user", client_id);
+            /* New user */
+            console.log("new user token", client_token);
           
             /* Insert record */
             Users.insert({
               name: profile.name,
               email: profile.email,
               facebook: profile,
-              client_id: client_id
+              client_token: client_token
             }).success( function (user) {
 
               /* Success */
               console.log("Created account for", user.email);
-              res.json({client_id: user.client_id});
+              res.json({user_id: user._id, client_token: user.client_token});
 
             }).error(function (err) {
               res.json({error: err});
@@ -253,7 +272,7 @@ router.post('/auth/login', function (req, res) {
       if (user && user.password == hash) {
 
         /* Logged in */
-        res.json({client_id: user.client_id, message: "Logged in"});
+        res.json({user_id: user._id, client_token: user.client_token});
       } else {
 
         res.json({error: {
@@ -266,25 +285,25 @@ router.post('/auth/login', function (req, res) {
   }
 });
 
-/* Middleware to verify client ID for certain routes */
+/* Middleware to verify client token for certain routes */
 function apiAuthenticate (req, res, next) {
-  var client_id = req.body.client_id;
-  var email = req.body.email;
+  var client_token = req.body.client_token;
+  var user_id = req.body.user_id;
 
-  /* Both client_id and email must be send together */
-  if (client_id && email) {
+  /* Both client_token and user_id must be send together */
+  if (client_token && user_id) {
     Users.findOne({
-      email: email,
-      client_id: client_id}).success(function (user) {
+      _id: user_id,
+      client_token: client_token}).success(function (user) {
 
-      /* If the email/token pair was found, continue to next middleware */
+      /* If the user_id/token pair was found, continue to next middleware */
       if (user) {
         console.log("Authenticated client");
         return next();
       } else {
         console.log("Client not found");
 
-        /* Don't proceed to other middleware if client ID isn't verified */
+        /* Don't proceed to other middleware if client token isn't verified */
         res.json({error: {
           message: "Client not found"
         }});
@@ -294,16 +313,16 @@ function apiAuthenticate (req, res, next) {
       res.json({error:  err});
     });
   } else {
-    console.log("Client ID and email not both sent");
+    console.log("client token and user_id not both sent");
 
-    /* Again, client ID is not universally unique, so it must be sent with an email */
+    /* Again, client token is not universally unique, so it must be sent with an user_id */
     res.json({error: {
-      message: "Client id and email not sent"
+      message: "client token and user_id not sent"
     }})
   }
 }
 
-function genClientId(seed) {
+function genClientToken(seed) {
   return crypto.createHash('sha1').update(JSON.stringify(seed + Math.random().toString())).digest('hex');
 }
 

@@ -57,21 +57,21 @@ For requests that do not require event-based socketed connections, like searchin
 
 *Note: Every response can have an `error` attribute, with an error description, `error.message`*
 
-**Step 1:** Register or log in to obtain a `client_id` token.
+**Step 1:** Register or log in to obtain a `client_token` token.
 
 - POST `/api/auth/register`: Register an account for the first time (without Facebook)
     - **Input**: Choose one:
         - `{email: String, password: String, name: String}`: Register with an name/email/password
-    - **Returns**: `{client_id: String}`: **Save this. Required for all API requests**
-- POST `/api/auth/login`: Log in to receive a `client_id` for API requests
+    - **Returns**: `{user_id: String, client_token: String}`: **Save this. Required for all API requests**
+- POST `/api/auth/login`: Log in to receive a `client_token` for API requests
     - **Input**: Choose ONE:
         - `{email: String, password: String}`: Log in with an email/password
         - `{facebook_access_token: String}`: Log in with a valid FB access token
-    - **Returns**: `{client_id: String}`: **Save this. Required for all API requests**
+    - **Returns**: `{user_id: String, client_token: String}`: **Save this. Required for all API requests**
 
 **Step 2:** Use the API
 
-Every request from this point on requires a `client_id` and `email` attribute in the input. The `client_id` is essentially a password, so keep it secure locally.
+Every request from this point on requires a `client_token` and `user_id` attribute in the input. The `client_token` is essentially a password, so keep it secure locally.
 
 - POST `/api/playlists`: Get a list of playlists
     - **Input**: Nothing
@@ -103,8 +103,8 @@ For clients and players subscribing to playlist updates
 
 - on `auth`: Initialize authentication by passing API credentials
     - **Parameters**:
-        - `client_id`: Client token from the REST API `/auth/login`
-        - `email`: Email address of client
+        - `client_token`: Client token from the REST API `/auth/login`
+        - `user_id`: UserId of client from Step 1
     - **Emits**: `auth_response`: On result. No error is a success.
         - `error`: Sent only if there was an error
             - `message: String`: Description of problem

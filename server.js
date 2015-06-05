@@ -42,8 +42,8 @@ app.use(function(req,res,next) {
   next();
 });
 app.use(cookieParser());
-app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
 app.use(session({
   secret: 'queuemeup',
   resave: false,
@@ -81,16 +81,17 @@ io.on('connection', function(socket) {
 
   /* Wait for socket API authentication */
   socket.on("auth", function (data) {
-      var client_id = data.client_id;
-      var email = data.email;
+      var client_token = data.client_token;
+      var user_id = data.user_id;
 
-      /* Both client_id and email must be send together */
-      if (client_id && email) {
+      /* Both client_token and user_id must be send together */
+      if (client_token && user_id) {
         Users.findOne({
-          email: email,
-          client_id: client_id}).success(function (user) {
+          _id: user_id,
+          client_token: client_token
+        }).success(function (user) {
 
-          /* If the email/token pair was found */
+          /* If the user_id/token pair was found */
           if (user) {
             console.log("Authenticated socket client");
             
@@ -111,11 +112,11 @@ io.on('connection', function(socket) {
           socket.emit("auth_response", {error:  err});
         });
       } else {
-        console.log("Client ID and email not both sent");
+        console.log("client_token and user_id not both sent");
 
-        /* Again, client ID is not universally unique, so it must be sent with an email */
+        /* Again, Client token is not universally unique, so it must be sent with an user_id */
         socket.emit("auth_response", {error: {
-          message: "Client id and email not both sent"
+          message: "client_token and user_id not both sent"
         }});
       }
   });  
@@ -164,7 +165,7 @@ io.on('connection', function(socket) {
               console.log("Weird. Data coming in as string. Parsing anyways...");
               play_state = JSON.parse(play_state);
           }
-          console.log("Client play/pause.");
+          console.log("Client play/pause: ", play_state);
           Playlists.findAndModify(
             {_id: playlist._id},
             { $set: {
@@ -232,16 +233,16 @@ function subscribeListen(user_id, socket) {
   });
 
   /* Client requests subscription to a playlist's updates */
-  socket.on('client_subscribe', clientSubscribe);
+  socket.on('client_subscribe', function (data) { clientSubscribe(data); });
 
   /* ON "playlist:player:request" */
-  socket.on('player_subscribe', playerSubscribe);
+  socket.on('player_subscribe', function (data) { playerSubscribe(data); });
 
   /* Client requests to unsubscribe from updates */
-  socket.on('client_unsubscribe', clientUnsubscribe);
+  socket.on('client_unsubscribe', function (data) { clientUnsubscribe(); });
 
   /* ON "playlist:player:disconnect" */
-  socket.on('player_unsubscribe', playerUnsubscribe);
+  socket.on('player_unsubscribe', function (data) { playerUnsubscribe(); });
 
   /* Register listeners for player updates */
   function playerListen() {
@@ -249,17 +250,19 @@ function subscribeListen(user_id, socket) {
 
     /* Player is sending progress updates */
     socket.on("track_progress", function (data) {
+      console.log("Updating progress", data);
 
-      /* Don't do anything if no longer current (from forced override) */
-      if (!isCurrentPlayer()) {
+      /* Don't do anything if no longer current (possibly from forced override) */
+      isCurrentPlayer(function () {
+        io.to(player_subscription).emit('track_progress_update', {
+          progress: data.progress,
+          duration: data.duration
+        });
+      }, function (reason) {
+        console.log(reason);
         socket.disconnect();
-      }
-
-      /* Broadcast the progress update */
-      io.to(playlist._id).emit('track_progress_update', {
-        progress: data.progress,
-        duration: data.duration
       });
+
     });
 
     /* Player track is over and requesting new track*/
@@ -267,42 +270,47 @@ function subscribeListen(user_id, socket) {
       console.log("Track finished... Going to next");
       
       /* Don't do anything if no longer current (from forced override) */
-      if (!isCurrentPlayer()) {
-        socket.disconnect();
-      }
+      isCurrentPlayer(function () {
 
-      /* Get the most recent playlist and skip the track */
-      Playlists.findOne({_id: player_subscription}).success(function (playlist) {
-        utils.skipTrack(db, io, playlist, function(result) {
-          console.log(result);
+        /* Get the most recent playlist and skip the track */
+        Playlists.findOne({_id: player_subscription}).success(function (playlist) {
+          utils.skipTrack(db, io, playlist, function(result) {
+            console.log(result);
+          });
+        }).error(function (err) {
+          console.log(err);
         });
-      }).error(function (err) {
-        console.log(err);
+
+      }, function (reason) {
+        console.log(reason);
+        socket.disconnect();
       });
     });
 
     /* Player device is paused */
     socket.on("track_play_pause", function (data) {
-      console.log("Client play/pause.");
-      var playing = data.play;
+      console.log("Client play/pause: ", data);
+      var playing = data.playing;
 
       /* Don't do anything if no longer current (from forced override) */
-      if (!isCurrentPlayer()) {
+      isCurrentPlayer(function () {
+        /* Update the DB */
+        Playlists.findAndModify(
+          {_id: player_subscription},
+          { $set: {
+            play: playing
+          }},
+          {"new": true}
+        ).success(function (playlist) {
+          utils.emitStateChange(io, playlist, "track_play_pause");
+        }).error(function (err) {
+          console.log(err);
+        });
+      }, function (reason) {
+        console.log(reason);
         socket.disconnect();
-      }
-
-      /* Update the DB */
-      Playlists.findAndModify(
-        {_id: playlist._id},
-        { $set: {
-          play: playing
-        }},
-        {"new": true}
-      ).success(function (playlist) {
-        utils.emitStateChange(io, playlist, "track_play_pause");
-      }).error(function (err) {
-        console.log(err);
       });
+
     });
   }
 
@@ -313,45 +321,53 @@ function subscribeListen(user_id, socket) {
 
   }
 
-  function isCurrentPlayer() {
+  function isCurrentPlayer(trueCall, falseCall) {
+    console.log("IS CURRENT?");
+
     /* Check the playlist id*/
     Playlists.findOne({_id: player_subscription}).success( function (playlist) {
 
       /* If the user is the admin of a playlist */
       if (playlist) {
-
-        if (playlist.player == user_id) {
-          return true
+        /* Because they are both objects, compare them as strings...*/
+        if (JSON.stringify(playlist.player) == JSON.stringify(user_id)) {
+          trueCall();
         } else {
-          return false;
+          falseCall("User " + user_id + " is not current player (" + playlist.player +")");
         }
       } else {
-        return false;
+        falseCall("Playlist " + player_subscription + " not found");
       }
     }).error (function (err) {
       console.log(err);
-      return false;
+      falseCall(err);
     });
   }
 
   function clientSubscribe(data) {
-    var playlist_id = data.playlist_id;
+    if (data) {
+      var playlist_id = data.playlist_id;
 
-    /* Find the playlist */
-    Playlists.findOne({_id: new ObjectId(playlist_id)}).success(function (playlist) {
-      if (playlist) {
-        /* Save the currently subscribed playlist */
-        client_subscription = playlist._id;
 
-        /* Join the socket to the this playlists's socket room */
-        socket.join(playlist._id);
+      /* Find the playlist */
+      Playlists.findOne({_id: new ObjectId(playlist_id)}).success(function (playlist) {
+        if (playlist) {
+          /* Save the currently subscribed playlist */
+          client_subscription = playlist._id;
 
-        /* Send an initial state_change event to populate */
-        utils.sendStateChange(socket, playlist, "client_subscribe");
-      }
-    });
+          /* Join the socket to the this playlists's socket room */
+          socket.join(playlist._id);
 
-    console.log("Client Subscribing");
+          /* Send an initial state_change event to populate */
+          utils.sendStateChange(socket, playlist, "client_subscribe");
+        }
+      });
+
+      console.log("Client Subscribing");
+    } else {
+      console.log("Data undefined");
+    }
+    
   }
 
   function playerSubscribe (data) {
@@ -371,9 +387,9 @@ function subscribeListen(user_id, socket) {
 
         /* If the playlist already has a registerd player */
         if (playlist.player && !force) {
-          socket.emit("player_subscribe_response", {
+          socket.emit("player_subscribe_response", {error: {
             message: "Player already connected. Disconnect first..."
-          });
+          }});
 
         /* Register the player in the DB */
         } else {
@@ -382,6 +398,9 @@ function subscribeListen(user_id, socket) {
               player: user_id
             }
           }, {"new": true}).success(function (playlist) {
+
+            /* Record the subscription */
+            player_subscription = playlist_id;
 
             /* Subscribe the player as a client */
             clientSubscribe(data);
@@ -428,7 +447,7 @@ function subscribeListen(user_id, socket) {
         player_subscription = null;
         
         /* Stop listening to play updates*/
-        playerStopListen();
+        // playerStopListen();
 
         /* Unsubscribe as a client */
         clientUnsubscribe();
