@@ -186,8 +186,8 @@ io.on('connection', function(socket) {
         socket.on('track_finished', function() {
           console.log("Track finished... Going to next");
           Playlists.findOne({_id: playlist._id}).success(function (playlist) {
-            utils.skipTrack(db, io, playlist, function(result) {
-              console.log(result);
+            utils.skipTrack(playlist, function(result, err) {
+              console.log(result, err);
               // do something?
             });
           }).error(function (err) {
@@ -274,8 +274,8 @@ function subscribeListen(user_id, socket) {
 
         /* Get the most recent playlist and skip the track */
         Playlists.findOne({_id: player_subscription}).success(function (playlist) {
-          utils.skipTrack(db, io, playlist, function(result) {
-            console.log(result);
+          utils.skipTrack(playlist, function(result, err) {
+            console.log(result, err);
           });
         }).error(function (err) {
           console.log(err);

@@ -177,11 +177,11 @@ Objects
     - `spotify` (If user is connected with Spotify)
         - `id`: *String*: Spotify profile ID
 
-- *State*: (Note: all fields are *optionally* sent). Generally speaking, only the changed fields are sent, but that is not always the case.
-    - `[play]` *Boolean*: `true` if playing, `false` otherwise
-    - `[track]` *Track*: Currently playing track.
-    - `[queue]` *[QueueItem]*: Ordered Array of *QueueItem*s.
-    - `[trigger]` *String*: Mostly for debugging. Identifies what action caused this broadcast.
+- *State*: The following fields are always sent:
+    - `play` *Boolean*: `true` if playing, `false` otherwise
+    - `track` *Track*: Currently playing track.
+    - `queue` *[QueueItem]*: Ordered Array of *QueueItem*s.
+    - `trigger` *String*: Mostly for debugging. Identifies what action caused this broadcast.
 
 - *Track*: Simplified version of [Spotify's Track (full)](https://developer.spotify.com/web-api/object-model/#track-object-full).
     -  `name` *String*: Track name
