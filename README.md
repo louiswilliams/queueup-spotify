@@ -7,7 +7,7 @@ A QueueUp *Player* is requried to stream from QueueUp. This repository is for th
 
 Live site
 ---
- - [q.louiswilliams.org](http://q.louiswilliams.org) (Any of [q,qup,queueup] subdomains will work)
+ - [qup.louiswilliams.org](http://q.louiswilliams.org) (Any of [q,qup,queueup] subdomains will work)
 
 
 ![Playlist](public/images/screen1small.png)
@@ -57,7 +57,21 @@ For requests that do not require event-based socketed connections, like searchin
 
 *Note: Every response can have an `error` attribute, with an error description, `error.message`*
 
-**Step 1:** Register or log in to obtain a `client_token` token.
+### Unauthenticated Routes
+These routes do not require API authentication
+
+
+- GET `/api/playlists`: Get a list of playlists
+    - **Input**: Nothing
+    - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
+- GET `/api/playlists/:playlist_id`: Get details for a playlist, by `_id`.
+    - **Input**: Nothing
+    - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
+ 
+### Authenticated Routes
+Routes that use the following authentication process to allow the subsequent routes
+
+#### Step 1: Register or log in to obtain a `client_token` token.
 
 - POST `/api/auth/register`: Register an account for the first time (without Facebook)
     - **Input**: Choose one:
@@ -69,16 +83,10 @@ For requests that do not require event-based socketed connections, like searchin
         - `{facebook_access_token: String}`: Log in with a valid FB access token
     - **Returns**: `{user_id: String, client_token: String}`: **Save this. Required for all API requests**
 
-**Step 2:** Use the API
+#### Step 2: Use the API
 
 Every request from this point on requires a `client_token` and `user_id` attribute in the input. The `client_token` is essentially a password, so keep it secure locally.
 
-- POST `/api/playlists`: Get a list of playlists
-    - **Input**: Nothing
-    - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
-- POST `/api/playlists/:playlist_id`: Get details for a playlist, by `_id`.
-    - **Input**: Nothing
-    - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
 - POST `/api/playlists/:playlist_id/skip`: Skip the current track (if allowed)
     - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
@@ -99,7 +107,7 @@ API: socket.io
 ---
 For clients and players subscribing to playlist updates
 
-**Step 1:** First authenticate to gain access:
+### Step 1: Authenticate to gain access
 
 - on `auth`: Initialize authentication by passing API credentials
     - **Parameters**:
@@ -109,9 +117,9 @@ For clients and players subscribing to playlist updates
         - `error`: Sent only if there was an error
             - `message: String`: Description of problem
 
-**Step 2:** Register as a *Client* or *Player*.
+### Step 2: Register as a *Client* or *Player*
 
-**Register as a Client:** Read-only updates
+#### Register as a Client (Read-only updates)
 
 - on `client_subscribe`: Subscribe to updates from a playlist
     - **Parameters**:
@@ -125,7 +133,8 @@ For clients and players subscribing to playlist updates
             - `message: String`: Description of problem
 
 
-**Register as a Player:** Only one allowed per playlist (registers as a client inherently):
+#### Register as a Player (One per playlist)
+This registers as a client inherently
 
 - on `player_subscribe`: Subscribe to updates to play from a playlist
     - **Parameters**:

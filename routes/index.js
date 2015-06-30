@@ -82,8 +82,10 @@ router.post('/new', function (req, res) {
   } else {
     var key = name.replace(/[^\w]/gi,'').toLowerCase();
 
+    var displayName = (req.user.facebook)
     playlists.insert({
       admin: req.user._id,
+      admin_name: req.user.name,
       key: key,
       name: name,
       playing: false,

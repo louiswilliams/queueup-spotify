@@ -194,11 +194,8 @@ router.post('/:playlist/:name/skip', function(req, res) {
     utils.skipTrack(req.playlist, function (playlist, err) {
       if (playlist) {
         /* Broadcast the change */
-        req.io.to(playlist._id).emit('state_change', {
-          track: playlist.current,
-          queue: playlist.tracks,
-          trigger: "next_track"
-        });
+
+        utils.emitStateChange(req.io, playlist, "next_track");
 
         res.json({message: "Skipped track"});
       } else {

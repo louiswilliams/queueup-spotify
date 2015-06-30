@@ -275,7 +275,7 @@ function subscribeListen(user_id, socket) {
         /* Get the most recent playlist and skip the track */
         Playlists.findOne({_id: player_subscription}).success(function (playlist) {
           utils.skipTrack(playlist, function(result, err) {
-            console.log(result, err);
+            utils.emitStateChange(io, result, "track_finished");
           });
         }).error(function (err) {
           console.log(err);

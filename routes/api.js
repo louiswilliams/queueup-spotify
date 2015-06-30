@@ -12,133 +12,8 @@ var db = monk('localhost:27017/queueup');
 var Playlists = db.get('playlists');
 var Users = db.get('users');
 
-/* Playlist_id param */
-router.param('playlist', function(req, res, next, id) {
 
-  Playlists.findOne({_id: id},{}, function(err, playlist) {
-    if (err){
-      res.json({error: {message: "Find playlist Error: " + err}});
-    }
-    if (playlist) {
-      req.playlist = playlist;
-      return next();
-    } else {
-      res.json({error: {message: "Couldn't find playlist " + id}});
-    }
-
-  }); 
-});
-
-/* User_id parameter */
-router.param('user', function(req, res, next, id) {
-
-  Users.findOne({_id: id},{}, function(err, user) {
-    if (err){
-      res.json({error: {message: "Find user Error: " + err}});
-    } else if (user) {
-      req.user = user;
-      return next();
-    } else {
-      res.json({error: {message: "Couldn't find user " + id}});
-    }
-
-  }); 
-});
-
-/** PLAYLIST ROUTES **/
-
-/** Handle API authentication **/
-router.use('/playlists', apiAuthenticate);
-
-/** Handle API authentication **/
-router.use('/users', apiAuthenticate);
-
-router.post('/playlists', function (req, res) {
-  var playlists = req.db.get('playlists');
-
-  playlists.find({},{sort: {"last_updated": -1}, fields: {tracks: 0}}).success(function (documents) {
-    res.json({playlists: documents});
-  }).error(function (err) {
-    res.json({error: err});
-  });
-
-});
-
-router.post('/playlists/:playlist', function (req, res) {
-  res.json({playlist: req.playlist});
-
-});
-
-
-/* ON "playlist:skip" */
-router.post('/playlists/:playlist/skip', function (req, res) {
-    utils.skipTrack(req.playlist, function(playlist, err) {
-
-      if (playlist) {
-        /* Broadcast the change */
-        utils.emitStateChange(io, playlist, "skip_track");
-
-        res.json({playlist: playlist});
-        console.log("Skipped track");  
-      } else {
-        console.log(err);
-        res.json(err);
-      }
-      
-    });
-});
-
-/* ON "playlist:update" */
-router.post('/playlists/:playlist/update', function (req, res) {
-  // socket.emit('playlist:changed');
-});
-
-/* ON "playlist:vote" */
-router.post('/playlists/:playlist/vote', function (req, res) {
-  // socket.emit(playlist:changed)    
-});
-
-/* ON "playlist:import" */
-router.post('/playlists/:playlist/import', function (req, res) {
-  // socket.emit(playlist:changed)
-});
-
-/** User Routes **/
-
-router.post("/users/:user", function (req, res) {
-  var user = {
-    _id: req.user._id,
-    name: req.user.name,
-  };
-
-  if (req.user.facebook) {
-    user.facebook = { 
-      id: req.user.facebook.id
-    }
-  }
-  if (req.user.spotify) {
-    user.spotify = {
-      id: req.user.spotify.id
-    }
-  }
-
-  res.json({user: user});
-});
-
-router.post("/users/:user/playlists", function (req, res) {
-  Playlists.find({
-    admin: req.user._id
-  }, {fields: {tracks: 0}}).success(function (playlists) {
-
-    res.json({playlists: playlists});
-  }).error(function (err) {
-    res.json({error: err});
-  });
-});
-
-/** AUTH ROUTES **/
-
-/* ON "auth:init" */
+/* Register a client */
 router.post('/auth/register', function (req, res) {
   var email = req.body.email;
   var name = req.body.name;
@@ -284,6 +159,164 @@ router.post('/auth/login', function (req, res) {
     res.json({error: {message: "Email/pass OR access token not sent"}});
   }
 });
+
+
+/* Playlist_id param */
+router.param('playlist', function(req, res, next, id) {
+
+  Playlists.findOne({_id: id},{}, function(err, playlist) {
+    if (err){
+      res.json({error: {message: "Find playlist Error: " + err}});
+    }
+    if (playlist) {
+      req.playlist = playlist;
+      return next();
+    } else {
+      res.json({error: {message: "Couldn't find playlist " + id}});
+    }
+
+  }); 
+});
+
+/* User_id parameter */
+router.param('user', function(req, res, next, id) {
+
+  Users.findOne({_id: id},{}, function(err, user) {
+    if (err){
+      res.json({error: {message: "Find user Error: " + err}});
+    } else if (user) {
+      req.user = user;
+      return next();
+    } else {
+      res.json({error: {message: "Couldn't find user " + id}});
+    }
+
+  }); 
+});
+
+/** UNAUTHENTICATED ROUTES **/
+
+/* Search spotify with a page offset*/
+router.get('/search/tracks/:query/:offset?', function (req, res) {
+  var offset = (req.params.offset) ? req.params.offset : 0;
+
+  /* Essentially wrap the Spotify search by the server to not require authentication */
+  req.spotify.searchTracks(req.params.query, {limit: 10, offset: offset, market: "US"}).then(function(data) {
+    res.json({tracks: data.tracks.items});
+  }, function(err) {
+    console.log("Query error: ",err);
+    res.json({error: err});
+  });
+});
+
+/** Unauthenticated playlist routes **/
+
+/* Get all playlists */
+router.get('/playlists', function (req, res) {
+  var playlists = req.db.get('playlists');
+
+  playlists.find({},{sort: {"last_updated": -1}, fields: {tracks: 0}}).success(function (documents) {
+    res.json({playlists: documents});
+  }).error(function (err) {
+    res.json({error: err});
+  });
+
+});
+
+/* Get playlist */
+router.get('/playlists/:playlist', function (req, res) {
+  res.json({playlist: req.playlist});
+});
+
+
+/** AUTHENTICATED ROUTES **/
+
+router.use('/', apiAuthenticate);
+
+
+router.post('/playlists/:playlist/add', function (req, res) {
+  if (req.body.track_id) {
+    var track_id = req.body.track_id;
+      utils.addTrackToPlaylist(req, track_id, req.playlist, function(err) {
+        if (err) {
+          res.json({error: err});
+        } else {
+          res.json({message: "Success"});
+        }
+      });
+
+    } else {
+      console.log(req.body);
+      res.json({error: {message: "No track_id sent"}});
+    }
+});
+
+/* ON "playlist:skip" */
+router.post('/playlists/:playlist/skip', function (req, res) {
+    utils.skipTrack(req.playlist, function(playlist, err) {
+
+      if (playlist) {
+        /* Broadcast the change */
+        utils.emitStateChange(io, playlist, "skip_track");
+
+        res.json({playlist: playlist});
+        console.log("Skipped track");  
+      } else {
+        console.log(err);
+        res.json(err);
+      }
+      
+    });
+});
+
+
+/* ON "playlist:update" */
+router.post('/playlists/:playlist/update', function (req, res) {
+  // socket.emit('playlist:changed');
+});
+
+/* ON "playlist:vote" */
+router.post('/playlists/:playlist/vote', function (req, res) {
+  // socket.emit(playlist:changed)    
+});
+
+/* ON "playlist:import" */
+router.post('/playlists/:playlist/import', function (req, res) {
+  // socket.emit(playlist:changed)
+});
+
+/** User Routes **/
+
+router.post("/users/:user", function (req, res) {
+  var user = {
+    _id: req.user._id,
+    name: req.user.name,
+  };
+
+  if (req.user.facebook) {
+    user.facebook = { 
+      id: req.user.facebook.id
+    }
+  }
+  if (req.user.spotify) {
+    user.spotify = {
+      id: req.user.spotify.id
+    }
+  }
+  res.json({user: user});
+});
+
+router.post("/users/:user/playlists", function (req, res) {
+  Playlists.find({
+    admin: req.user._id
+  }, {fields: {tracks: 0}}).success(function (playlists) {
+
+    res.json({playlists: playlists});
+  }).error(function (err) {
+    res.json({error: err});
+  });
+});
+
 
 /* Middleware to verify client token for certain routes */
 function apiAuthenticate (req, res, next) {

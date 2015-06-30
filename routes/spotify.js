@@ -3,10 +3,14 @@ var router = express.Router();
 
 router.get('/search/:query/:offset?', function(req, res) {
   var offset = (req.params.offset) ? req.params.offset : 0;
+
+  /* Query spotify with an optional offset for pages of results */
   req.spotify.searchTracks(req.params.query, {limit: 5, offset: offset}).then(function(data) {
     var response = {};
     var tracks = data.tracks.items;
     console.log(tracks);
+
+    /* Construct a smaller response object  */
     for (var i in tracks) {
       var track = {
         name: tracks[i].name,

@@ -302,7 +302,7 @@ $(document).ready(function() {
   socket.on('track_progress_update', function (update) {
     var percent = 100 * (update.progress / update.duration);
     console.log("Progress: " + percent);
-    $progress_bar.animate({width: percent + "%"}, 1000);
+    $progress_bar.animate({width: percent + "%"}, 250);
   });
 
 
