@@ -90,9 +90,6 @@ Every request from this point on requires a `client_token` and `user_id` attribu
 - POST `/api/playlists/:playlist_id/skip`: Skip the current track (if allowed)
     - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
-- POST `/api/playlists/:playlist_id/update`: Submit changes to a playlist
-    - **Input**: `{playlist: Playlist}`: A Playlist with attributes to change (if allowed)
-    - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object. 
 - POST `/api/playlists/:playlist_id/vote`: Vote on a track
     - **Input**: `{track_id: String, vote: Boolean}`: True to vote, false to unvote
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.   

@@ -424,7 +424,7 @@ router.post('/playlists/:playlist/vote', function (req, res) {
       if (upvote) {
         res.json({error: {message: "The user has already voted on this track"}});
       } else {
-        res.json({error: {message: "The user hasn't voted on this track yet"}});
+        res.json({error: {message: "The user hasn't voted on this track yet"}});  
       }
     }
 
@@ -442,7 +442,7 @@ router.post('/playlists/:playlist/vote', function (req, res) {
         /* If the track hasn't disappeared for some reason since last check*/
         if (newPlaylist != null) {
           utils.emitStateChange(req.io, newPlaylist, "vote");
-          res.json(newPlaylist);
+          res.json(playlist: {newPlaylist});
         } else {
           console.log("No track found in playlist");
           res.json({error: {message: "No track found in playlist"}});
