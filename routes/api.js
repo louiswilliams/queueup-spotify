@@ -229,11 +229,7 @@ router.get('/playlists/:playlist', function (req, res) {
 });
 
 
-/** AUTHENTICATED ROUTES **/
-
-router.use('/', apiAuthenticate);
-
-
+/* Add track */
 router.post('/playlists/:playlist/add', function (req, res) {
   if (req.body.track_id) {
     var track_id = req.body.track_id;
@@ -251,33 +247,215 @@ router.post('/playlists/:playlist/add', function (req, res) {
     }
 });
 
-/* ON "playlist:skip" */
-router.post('/playlists/:playlist/skip', function (req, res) {
-    utils.skipTrack(req.playlist, function(playlist, err) {
+/** AUTHENTICATED ROUTES **/
 
-      if (playlist) {
-        /* Broadcast the change */
-        utils.emitStateChange(io, playlist, "skip_track");
+router.use('/', apiAuthenticate);
+
+
+// /* ON "playlist:skip" */
+// router.post('/playlists/:playlist/skip', function (req, res) {
+//     utils.skipTrack(req.playlist, function(playlist, err) {
+
+//       if (playlist) {
+//         /* Broadcast the change */
+//         utils.emitStateChange(io, playlist, "skip_track");
+
+//         res.json({playlist: playlist});
+//         console.log("Skipped track");  
+//       } else {
+//         console.log(err);
+//         res.json(err);
+//       }
+      
+//     });
+// });
+
+/* Create new playlist */
+router.post('/playlists/new', function (req, res) {
+  var playlist = req.body.playlist;
+
+  if (playlist && playlist.name) {
+
+    var key = playlist.name.replace(/[^\w]/gi,'').toLowerCase();
+
+    Playlists.insert({
+      admin: req.apiUser._id,
+      admin_name: req.apiUser.name,
+      key: key,
+      name: playlist.name,
+      playing: false,
+      volume: 50,
+      date_created: new Date().getTime(),
+      last_updated: new Date().getTime()
+
+    }).success(function (playlist) {
+
+      res.json({playlist: playlist});
+    }).error(function (err) {
+
+      res.json({error: err});
+    });
+
+
+  } else {
+    res.json({error: {message: "Playlist and name not given"}});
+  }
+});
+
+/* Rename playlist */
+router.post('/playlists/:playlist/rename', function (req, res) {
+
+  /* Make sure user is the admin of the playlist */
+  if (req.apiUser._id.equals(req.playlist.admin)) {
+    var newName = req.body.name;
+
+    /* If the name is set, make the update */
+    if (newName) {
+      var key = req.playlist.name.replace(/[^\w]/gi,'').toLowerCase();
+
+      Playlists.findAndModify({
+        _id: req.playlist._id
+      }, {
+        $set: {
+          key: key,
+          name: newName
+        }
+      }, {
+        "new": true
+      }).success(function (playlist) {
 
         res.json({playlist: playlist});
-        console.log("Skipped track");  
+      }).error(function (err) {
+
+        res.json({error: err});
+      });
+
+    } else {
+      res.json({error: {message: "New name not set."}});
+    }
+
+  } else {
+    res.json({error: {message: "User is not the admin"}});
+  }
+
+});
+
+
+/* Delete playlist */
+router.post('/playlists/:playlist/delete', function (req, res) {
+
+  /* Make sure user is the admin of the playlist */
+  if (req.apiUser._id.equals(req.playlist.admin)) {
+
+    Playlists.remove({
+      _id: req.playlist._id
+    }).success(function (count) {
+
+      if (count == 1) {
+        res.json({success: true});
       } else {
-        console.log(err);
-        res.json(err);
+        res.json({error: {message: "Deleted " + count + " records."}});
       }
-      
+    }).error(function (err) {
+
+      res.json({error: err});
     });
+
+  } else {
+    res.json({error: {message: "User is not the admin"}});
+  }
+
 });
 
 
-/* ON "playlist:update" */
-router.post('/playlists/:playlist/update', function (req, res) {
-  // socket.emit('playlist:changed');
-});
-
-/* ON "playlist:vote" */
+/* A true vote is to add it, false is to remove it (only positive votes) */
 router.post('/playlists/:playlist/vote', function (req, res) {
-  // socket.emit(playlist:changed)    
+  /* The track_id is given when listing tracks on a playlist */
+  var trackId = req.body.track_id;
+  var upvote = req.body.vote;
+
+  /* First get playlist and track where the user is a voter */
+  Playlists.findOne({
+    _id: req.playlist._id,
+    tracks: {
+      $elemMatch: {
+        _id: ObjectID(trackId),
+        voters: {
+          $elemMatch: {
+            _id: req.apiUser._id
+          }
+        }
+      }
+    }
+  }).success(function (playlist) {
+
+    var updateQuery;
+
+    /* If we are to add a vote and the user isn't already a voter on the track */
+    if (upvote && !playlist) {
+
+      /* Increments the votes and pushes the user to the list */
+      updateQuery = {
+        $inc: {
+          "tracks.$.votes": 1
+        },
+        $push: {
+          "tracks.$.voters": {
+            _id: req.apiUser._id
+          }
+        }
+      };
+
+    /* If the user is a voter and we are removing the vote */
+    } else if (!upvote && playlist) {
+
+      /* Decrement and remove the voter */
+      updateQuery = {
+        $inc: {
+        "tracks.$.votes": -1
+        },
+        $pull: {
+          "tracks.$.voters": {
+            _id: req.apiUser._id
+          }
+        }
+      };
+    } else {
+      if (upvote) {
+        res.json({error: {message: "The user has already voted on this track"}});
+      } else {
+        res.json({error: {message: "The user hasn't voted on this track yet"}});
+      }
+    }
+
+    /* If we have a valid scenario */
+    if (updateQuery) {
+
+      /* Do the update */
+      Playlists.findAndModify({
+        _id: req.playlist._id,
+        "tracks._id": ObjectID(trackId)
+      }, updateQuery, {
+        "new": true
+      }).success(function (newPlaylist) {
+
+        /* If the track hasn't disappeared for some reason since last check*/
+        if (newPlaylist != null) {
+          utils.emitStateChange(req.io, newPlaylist, "vote");
+          res.json(newPlaylist);
+        } else {
+          console.log("No track found in playlist");
+          res.json({error: {message: "No track found in playlist"}});
+        }
+      }).error(function (err) {
+        res.json({error: err});
+      });
+    } 
+
+  }).error(function (err) {
+    res.json({error: err});
+  });
+
 });
 
 /* ON "playlist:import" */
@@ -332,6 +510,7 @@ function apiAuthenticate (req, res, next) {
       /* If the user_id/token pair was found, continue to next middleware */
       if (user) {
         console.log("Authenticated client");
+        req.apiUser = user;
         return next();
       } else {
         console.log("Client not found");

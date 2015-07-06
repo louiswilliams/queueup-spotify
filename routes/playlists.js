@@ -37,18 +37,14 @@ router.param('name', function(req, res, next, id) {
   }
 });
 
-router.get('/:playlist', function(req, res) {
-  res.redirect('/playlist/' + req.playlist._id + '/' + req.playlist.key);
-});
-
 // Pretty mode (for player)
 // GET /playlist/[id]/[name]/pretty
-router.get('/:playlist/:name/pretty', function(req, res) {
+router.get('/:playlist/:name?/pretty', function(req, res) {
   getPlaylist(req, res, true);
 });
 
 // GET /playlist/[id]/[name]
-router.get('/:playlist/:name', function(req, res) {
+router.get('/:playlist/:name?', function(req, res) {
   getPlaylist(req, res);
 });
 
@@ -99,7 +95,7 @@ function getPlaylist (req, res, pretty) {
 
 // POST /playlist/[playlist]/play
 // Change the playing status of the track (true | false)
-router.post('/:playlist/:name/play', function(req, res) {
+router.post('/:playlist/:name?/play', function(req, res) {
   var play = (req.body.play == "true"); // Toggle play/pause
   var playlists = req.db.get('playlists');
 
@@ -131,7 +127,7 @@ router.post('/:playlist/:name/play', function(req, res) {
 
 // POST /playlist/[playlist]/volume
 // Change the playback volume of the track [0-100]
-router.post('/:playlist/:name/volume', function(req, res) {
+router.post('/:playlist/:name?/volume', function(req, res) {
   var playlists = req.db.get('playlists');
 
   // Only the administrator can play/pause the track
@@ -168,7 +164,7 @@ router.post('/:playlist/:name/volume', function(req, res) {
 
 // POST /playlist/[playlist]/add/[trackid]
 // Adds a track to the playlist's queue
-router.post('/:playlist/:name/add/:trackid', function(req, res) {
+router.post('/:playlist/:name?/add/:trackid', function(req, res) {
   if (req.params.trackid) {
 
     utils.addTrackToPlaylist(req, req.params.trackid, req.playlist, function(err) {
@@ -186,7 +182,7 @@ router.post('/:playlist/:name/add/:trackid', function(req, res) {
 
 // Called when the current track is to be ended and the next in the queue is to be played
 // POST /playlist/:playlist/skip
-router.post('/:playlist/:name/skip', function(req, res) {
+router.post('/:playlist/:name?/skip', function(req, res) {
 
   // Only the administrator can play/pause the track
   // if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
@@ -208,7 +204,7 @@ router.post('/:playlist/:name/skip', function(req, res) {
 });
 
 // POST /playlist/:playlist/delete/:id
-router.post('/:playlist/:name/delete/:id', function(req, res) {
+router.post('/:playlist/:name?/delete/:id', function(req, res) {
   var playlists = req.db.get('playlists');
 
   var trackId = req.params.id;
@@ -247,7 +243,7 @@ router.post('/:playlist/:name/delete/:id', function(req, res) {
 });
 
 // POST /playlist/:playlist/vote/:id
-router.post('/:playlist/:name/vote/:id', function(req, res) {
+router.post('/:playlist/:name?/vote/:id', function(req, res) {
 
   if (!req.user) {
     req.session.redirect_after = req.protocol + '://' + req.get('host') + '/playlist/' + req.playlist._id;
@@ -286,7 +282,7 @@ router.post('/:playlist/:name/vote/:id', function(req, res) {
   });
 });
 
-router.post('/:playlist/:name/reorder', function(req, res) {
+router.post('/:playlist/:name?/reorder', function(req, res) {
   var playlists = req.db.get('playlists');
   var tracks = req.playlist.tracks;
   var move = req.body;
@@ -330,7 +326,7 @@ router.post('/:playlist/:name/reorder', function(req, res) {
 
 
 // List importable playlists
-router.get('/:playlist/:name/import', function(req, res) {
+router.get('/:playlist/:name?/import', function(req, res) {
   // Check first if admin
   if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
 
@@ -364,7 +360,7 @@ router.get('/:playlist/:name/import', function(req, res) {
 });
 
 // Import a Spotify playlist (owner/id) into the current playlist
-router.get('/:playlist/:name/import/:owner/:id', function(req, res) {
+router.get('/:playlist/:name?/import/:owner/:id', function(req, res) {
   if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
 
     // Get the api object, as well as the new user object if it changed

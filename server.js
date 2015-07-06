@@ -322,8 +322,6 @@ function subscribeListen(user_id, socket) {
   }
 
   function isCurrentPlayer(trueCall, falseCall) {
-    console.log("IS CURRENT?");
-
     /* Check the playlist id*/
     Playlists.findOne({_id: player_subscription}).success( function (playlist) {
 
