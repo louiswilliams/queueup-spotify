@@ -40,7 +40,7 @@ router.get('/user', function (req, res) {
       res.end(err);
     });
   } else {
-    res.redirect('/auth/spotify')
+    res.redirect('/auth/facebook')
   }
 });
 
