@@ -17,6 +17,7 @@ Setup
 -------
 The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. All of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications).
 
+The `/env.json` configuration file is required with two fields, *name* (environment) and *port* (server listen port)
 
 A MongoDB Server should be running on `localhost:27017`. This is configurable in `server.js`.
 
@@ -171,6 +172,7 @@ Objects
     -  `volume` *Number [0-100]*: Volume percentage
     -  `tracks` *[QueueItem]*:  Ordered items in the queue.
     -  `admin` Interal ID associate with the Adminisator user (creator)
+    -  `admin_name` Display name of admin
     -  `date_created` *Number*: Date created (UNIX)
     -  `last_updated` *Number*: Date last updated (UNIX)
     -  `key` *String*: Non-unique short name for the playlist

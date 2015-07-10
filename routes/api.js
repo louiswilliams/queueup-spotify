@@ -169,6 +169,33 @@ router.param('playlist', function(req, res, next, id) {
       res.json({error: {message: "Find playlist Error: " + err}});
     }
     if (playlist) {
+
+      /* Strip the voters field */
+      var tracks = playlist.tracks;
+
+      if (tracks && tracks.length > 0) {
+        tracks.forEach(function (track) {
+          
+          track.userIsVoter = false;
+
+          if (track.voters && track.voters.length > 0) {
+
+            /* If the apiUser is a voter, indicate that */
+            if (req.apiUser) {
+  
+              /* Specify whether or not the current user is a voter */
+              track.voters.forEach(function (voter) {
+                if (voter._id == req.apiUser._id) {
+                  track.userIsVoter = true;
+                }
+              });
+            }
+
+            delete track.voters;
+          }
+        })
+      }
+
       req.playlist = playlist;
       return next();
     } else {
@@ -371,15 +398,24 @@ router.post('/playlists/:playlist/delete', function (req, res) {
 /* A true vote is to add it, false is to remove it (only positive votes) */
 router.post('/playlists/:playlist/vote', function (req, res) {
   /* The track_id is given when listing tracks on a playlist */
-  var trackId = req.body.track_id;
   var upvote = req.body.vote;
+  var trackId;
+  
+  try {
+    trackId = ObjectID(req.body.track_id);
+  } catch (err) {
+    console.error("Track._id not valid", err);
+    res.json({error: err});
+    return;
+  }
+
 
   /* First get playlist and track where the user is a voter */
   Playlists.findOne({
     _id: req.playlist._id,
     tracks: {
       $elemMatch: {
-        _id: ObjectID(trackId),
+        _id: trackId,
         voters: {
           $elemMatch: {
             _id: req.apiUser._id
@@ -434,7 +470,7 @@ router.post('/playlists/:playlist/vote', function (req, res) {
       /* Do the update */
       Playlists.findAndModify({
         _id: req.playlist._id,
-        "tracks._id": ObjectID(trackId)
+        "tracks._id": trackId
       }, updateQuery, {
         "new": true
       }).success(function (newPlaylist) {
