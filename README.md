@@ -56,16 +56,16 @@ API: REST
 ---
 For requests that do not require event-based socketed connections, like searching for and updating playlist information. See **Objects** section for schema.
 
+
 *Note: Every response can have an `error` attribute, with an error description, `error.message`*
 
 ### Unauthenticated Routes
 These routes do not require API authentication
 
-
-- GET `/api/playlists`: Get a list of playlists
+- GET `/api/v1/playlists`: Get a list of playlists
     - **Input**: Nothing
     - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
-- GET `/api/playlists/:playlist_id`: Get details for a playlist, by `_id`.
+- GET `/api/v1/playlists/:playlist_id`: Get details for a playlist, by `_id`.
     - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
  
@@ -74,11 +74,11 @@ Routes that use the following authentication process to allow the subsequent rou
 
 #### Step 1: Register or log in to obtain a `client_token` token.
 
-- POST `/api/auth/register`: Register an account for the first time (without Facebook)
+- POST `/api/v1/auth/register`: Register an account for the first time (without Facebook)
     - **Input**: Choose one:
         - `{email: String, password: String, name: String}`: Register with an name/email/password
     - **Returns**: `{user_id: String, client_token: String}`: **Save this. Required for all API requests**
-- POST `/api/auth/login`: Log in to receive a `client_token` for API requests
+- POST `/api/v1/auth/login`: Log in to receive a `client_token` for API requests
     - **Input**: Choose ONE:
         - `{email: String, password: String}`: Log in with an email/password
         - `{facebook_access_token: String}`: Log in with a valid FB access token
@@ -88,16 +88,16 @@ Routes that use the following authentication process to allow the subsequent rou
 
 Every request from this point on requires a `client_token` and `user_id` attribute in the input. The `client_token` is essentially a password, so keep it secure locally.
 
-- POST `/api/playlists/:playlist_id/skip`: Skip the current track (if allowed)
+- POST `/api/v1/playlists/:playlist_id/skip`: Skip the current track (if allowed)
     - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
-- POST `/api/playlists/:playlist_id/vote`: Vote on a track
+- POST `/api/v1/playlists/:playlist_id/vote`: Vote on a track
     - **Input**: `{track_id: String, vote: Boolean}`: True to vote, false to unvote
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.   
-- POST `/api/users/:user_id`: Get User information
+- POST `/api/v1/users/:user_id`: Get User information
     - **Input**: Nothing
     - **Returns**: `user: User`: A *User* object.
-- POST `/api/users/:user_id/playlists:`: Get User playlists
+- POST `/api/v1/users/:user_id/playlists:`: Get User playlists
     - **Input**: Nothing
     - **Returns**: `playlists: [Playlist]`: Arraw of *Playlist* Objects (without tracks).
 
