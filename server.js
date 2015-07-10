@@ -20,6 +20,7 @@ var ObjectId = mongo.ObjectID;
 var db = monk('localhost:27017/queueup');
 
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}));
+var envConf = JSON.parse(fs.readFileSync(__dirname + '/env.json', {encoding: 'utf8'}));
 
 // Initialize Spotify web api
 var spotify = new SpotifyWebApi(spotifyConfig);
@@ -61,8 +62,8 @@ app.use('/auth', passportRouter);
 app.use('/api', apiRouter);
 
 // Start server
-server.listen(3004, function() {
-  console.log("Server started on port %d", server.address().port);
+server.listen(envConf.port, function() {
+  console.log("Server (%s) started on port %d", envConf.name, server.address().port);
 });
 
 
