@@ -81,10 +81,10 @@ passport.use(new FacebookStrategy({
     users.findAndModify(
         { "facebook.id" : profile.id},
         { $set: {
-            name: profile.name,
+            name: ((profile.displayName) ? profile.displayName : profile.id),
             facebook: {
               id: profile.id,
-              name: profile.name,
+              name: ((profile.displayName) ? profile.displayName : profile.id),
               gender: profile.gender,
               profileUrl: profile.profileUrl,
               accessToken: accessToken,
