@@ -74,7 +74,7 @@ In terms of the API, a **Client** is a read-only listener that subscribes to pla
 For requests that do not require event-based socketed connections, like searching for and updating playlist information. See **Objects** section for schema.
 
 
-*Note: All responses send 200 codes on success, 400 on client errors, 403 on unauthorized access, and 500 on server errors. 4xx errors contai an `error` attribute, with an error description, `error.message`*
+*Note: All responses send 200 codes on success, 400 on client errors, 403 on unauthorized access, and 500 on server errors. 4xx errors contain an `error` attribute, with an error description, `error.message`*
 
 ### Authenticated/Unauthenticated Routes
 
@@ -85,6 +85,7 @@ Authenticated routes require the HMAC scheme described below. Unauthenticated ro
 
 #### Step 1: Obtaining a `user_id` and `client_token` secret.
 
+*Note: a request to both of these routes REASSIGNS a `client_token` and invalidates the current one, if it exists.*
 
 - POST `/api/v2/auth/register`: Register an account for the first time (without Facebook)
     - **Input**: 
@@ -99,12 +100,12 @@ Authenticated routes require the HMAC scheme described below. Unauthenticated ro
 
 #### Step 2: Authenticating
 
-To authenticate, the server uses an HMAC with SHA1. There are 2 requried HTTP headers:
+To authenticate, the server uses an HMAC-SHA1 scheme. There are 2 requried HTTP headers:
 
 * `Date`: RFC2822 or ISO 8601 formatted date
 * `Authentication`: Basic HTTP authentication using the base64 encoded string in the form `user_id:HMAC_HASH`
 
-Where `user_id` is received from logging in. The `HMAC_HASH` the output of using `client_token` as the key of the HMAC algorithm with the following as input: 
+Where `user_id` is received from logging in. The `HMAC_HASH` is the output of using `client_token` as the key of the HMAC algorithm with the following as input: 
 
     HTTP_METHOD+HOSTNAME+URI+UNIX_SECONDS
 
@@ -114,7 +115,7 @@ Assume the following request by the user_id `cafebabecafebabe`, and client_token
 
     POST http://queueup.louiswilliams.org/api/v2/playlists/c0ffeec0ffee/rename
 
-The message to hash would be the following:
+This message is hashed:
 
     POST+queueup.louiswilliams.org+/api/v2/playlists/c0ffeec0ffee/rename+1436648403
 
@@ -131,10 +132,10 @@ The appropriate headers are then:
     Date: Saturday, 11-Jul-15 21:00:03 UTC
     Authentication: Basic Y2FmZWJhYmVjYWZlYmFiZToyODcxNzE1YjBjOWZiZjY4OGRlNTEwNGY4M2Q2YzgwMGYzMGNiZTM0
 
-*Note: Dates must be withing 5 minutes of server time, so accurate system clocks are necessary*
+*Note: Dates must be withing 5 minutes of server time to prevent replay*
 
 ### Unauthenticated Routes
-These routes do not require API authentication
+These routes do not require API authentication, but using authentication exposes certain fields (e.g. which tracks a user has voted on).
 
 - GET `/api/v2/playlists`: Get a list of playlists
     - **Input**: Nothing
@@ -144,10 +145,6 @@ These routes do not require API authentication
     - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
  
 ### Authenticated Routes
-Routes that use the following authentication process to allow the subsequent routes
-
-
-Every request from this point on requires a `client_token` and `user_id` attribute in the input. The `client_token` is essentially a password, so keep it secure locally.
 
 - POST `/api/v2/playlists/:playlist_id/skip`: Skip the current track (if allowed)
     - **Input**: Nothing

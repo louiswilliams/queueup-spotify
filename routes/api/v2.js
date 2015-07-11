@@ -1,3 +1,11 @@
+/**
+ * API version 2
+ *
+ * This API implements an HMAC-SHA1 scheme for API requests that 
+ * require authentication. A few routes can be accessed anonymously.
+ */
+
+
 var async = require('async');
 var basicAuth = require('basic-auth');
 var crypto = require('crypto');
@@ -199,11 +207,11 @@ router.param('user', function(req, res, next, id) {
   }); 
 });
 
-/* Apply authentication middleware */
+/* Routes beyond here should pass through the authentication middleware */
 router.use('/', apiAuthenticate);
 
 
-/** UNAUTHENTICATED ROUTES **/
+/** UNAUTHENTICATED ROUTES: Do not require an authenticated user **/
 
 /* Search spotify with a page offset*/
 router.get('/search/tracks/:query/:offset?', function (req, res) {
@@ -218,8 +226,6 @@ router.get('/search/tracks/:query/:offset?', function (req, res) {
   });
 });
 
-/** Unauthenticated playlist routes **/
-
 /* Get all playlists */
 router.get('/playlists', function (req, res) {
   var playlists = req.db.get('playlists');
@@ -232,13 +238,13 @@ router.get('/playlists', function (req, res) {
 
 });
 
-/* Get playlist */
+/* Get a playlist's info */
 router.get('/playlists/:playlist', function (req, res) {
   res.json({playlist: req.playlist});
 });
 
 
-/* Add track */
+/* Add a track to a playlist */
 router.post('/playlists/:playlist/add', function (req, res) {
   if (req.body.track_id) {
     var track_id = req.body.track_id;
@@ -257,11 +263,11 @@ router.post('/playlists/:playlist/add', function (req, res) {
 });
 
 
-/** ROUTES THAT REQUIRE AUTHENTICATION **/
+/** AUTHENTICATED ROUTES: All routes from now on require an authenticated user **/
 router.use('/', requireAuth);
 
 
-/* Create new playlist */
+/* Create a new playlist */
 router.post('/playlists/new', function (req, res) {
   var playlist = req.body.playlist;
 
@@ -293,7 +299,7 @@ router.post('/playlists/new', function (req, res) {
   }
 });
 
-/* Rename playlist */
+/* Rename a playlist */
 router.post('/playlists/:playlist/rename', function (req, res) {
 
   /* Make sure user is the admin of the playlist */
@@ -334,7 +340,7 @@ router.post('/playlists/:playlist/rename', function (req, res) {
 });
 
 
-/* Delete playlist */
+/* Delete a playlist */
 router.post('/playlists/:playlist/delete', function (req, res) {
 
   /* Make sure user is the admin of the playlist */
@@ -361,6 +367,7 @@ router.post('/playlists/:playlist/delete', function (req, res) {
 });
 
 
+/* Vote on a track, a vote is either cast or not at all. */
 /* A true vote is to add it, false is to remove it (only positive votes) */
 router.post('/playlists/:playlist/vote', function (req, res) {
   /* The track_id is given when listing tracks on a playlist */
@@ -451,13 +458,14 @@ router.post('/playlists/:playlist/vote', function (req, res) {
 
 });
 
-/* ON "playlist:import" */
+/* Import a spotify playlist into queueup */
 router.post('/playlists/:playlist/import', function (req, res) {
   // socket.emit(playlist:changed)
 });
 
 /** User Routes **/
 
+/* Describe a user */
 router.post("/users/:user", function (req, res) {
   var user = {
     _id: req.user._id,
@@ -477,6 +485,7 @@ router.post("/users/:user", function (req, res) {
   res.json({user: user});
 });
 
+/* Show a user's playlists */
 router.post("/users/:user/playlists", function (req, res) {
   Playlists.find({
     admin: req.user._id
@@ -489,9 +498,9 @@ router.post("/users/:user/playlists", function (req, res) {
 });
 
 
-/* If the apiUser isn't set, don't proceed */
-
+/* Ensure that there is an authenticated API user*/
 function requireAuth (req, res, next) {
+  /* If the apiUser isn't set, don't allow anonymous access */
   if (req.apiUser) {
     next();
   } else {
