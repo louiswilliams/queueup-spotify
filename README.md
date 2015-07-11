@@ -5,31 +5,49 @@ QueueUp is a collaborative playlist streaming service. Anybody can create a play
 
 A QueueUp *Player* is requried to stream from QueueUp. This repository is for the QueueUp *Server*. Read below about *Players*.
 
-Live site
----
- - [qup.louiswilliams.org](http://q.louiswilliams.org) (Any of [q,qup,queueup] subdomains will work)
+### Live site [queueup.louiswilliams.org](http://queueup.louiswilliams.org)
 
 
 ![Playlist](public/images/screen1small.png)
 ![Playlist](public/images/screen3small.png)
 
-Setup
--------
+
+## Contents
+
+* [Setup](#setup)
+* [Runnning](#running)
+* [Players](#players)
+    * [Implementation](#implementation)
+* [REST API](#rest-api)
+    * [Authenticated/Unauthenticated Routes](#authenticatedunauthenticated-routes)
+    * [Authentication](#authentication)
+        * [Step 1](#step-1-obtaining-a-user_id-and-client_token-secret)
+        * [Step 2](#step-2-authenticating)
+    * [Unauthenticated Routes](#unauthenticated-routes)
+    * [Authenticated Routes](#authenticated-routes)
+* [Socket.io API](#socketio-api)
+    * [Step 1](#step-1-authenticate-to-gain-access)
+    * [Step 2](#step-2-register-as-a-client-or-player)
+        * [Register as a Client](#register-as-a-client-read-only-updates)
+        * [Register as a Player](#register-as-a-player-one-per-playlist)
+* [Objects](#objects)
+
+## Setup
+
 The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. All of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications).
 
 The `/env.json` configuration file is required with two fields, *name* (environment) and *port* (server listen port)
 
 A MongoDB Server should be running on `localhost:27017`. This is configurable in `server.js`.
 
-Install & Run
--------------
-`npm install`
+    npm install
 
-`npm start`
+## Running
+
+    npm start
 
 
-Players
-=====================
+## Players
 
 A QueueUp Player is required to play from [QueueUp](http://qup.louiswilliams.org). It connects to the server, subscribes to a playlist, and updates automatically to play music from a playlist.
 
@@ -44,64 +62,107 @@ Notes:
   - All players require Spotify Premium accounts. This is a result of Spotify's streaming licensing, and there is no legal way around it. Consider buying one. As a student ($5/mo), it is one of the best decisions I've made in my adult life.
   - No web streaming API exists, again, because of music licensing issues with Spotify. Currently, the streaming APIs are limited to Android, iOS, and C (personal use developer accounts only).
 
-Implementation
--------------
+### Implementation
 
 A Player can be implemented using a mixture of REST and Socket.IO APIs.
 
 In terms of the API, a **Client** is a read-only listener that subscribes to playlist updates. A **Player** is a **Client** that can also send updates about the current state of the playing track. Only one **Player** is allowed to play at a time for a given playlist.
 
 
-API: REST
----
+## REST API
+
 For requests that do not require event-based socketed connections, like searching for and updating playlist information. See **Objects** section for schema.
 
 
-*Note: Every response can have an `error` attribute, with an error description, `error.message`*
+*Note: All responses send 200 codes on success, 400 on client errors, 403 on unauthorized access, and 500 on server errors. 4xx errors contai an `error` attribute, with an error description, `error.message`*
+
+### Authenticated/Unauthenticated Routes
+
+Authenticated routes require the HMAC scheme described below. Unauthenticated routes do not need to send any additional headers. The `Authentication` header implies the desire to authenticate, and its absense indicates the desire to proceed unauthenticated, if possible. An attempt to access an authenticated route without the `Authentication` header or if the user isn't found return 403 errors, all other bad requests return 400 (like an invalid hash). 
+
+
+### Authentication
+
+#### Step 1: Obtaining a `user_id` and `client_token` secret.
+
+
+- POST `/api/v2/auth/register`: Register an account for the first time (without Facebook)
+    - **Input**: 
+        - `{email: String, password: String, name: String}`: Register with an name/email/password
+    - **Returns**: `{user_id: String, client_token: String}`: **Save these for API requests**
+- POST `/api/v2/auth/login`: Log in to receive a `client_token` for API requests
+    - **Input**: Choose ONE:
+        - `{email: String, password: String}`: Log in with an existing email/password
+        - `{facebook_access_token: String}`: Log in with a valid FB access token
+    - **Returns**: `{user_id: String, client_token: String}`: **Save these for API requests**
+
+
+#### Step 2: Authenticating
+
+To authenticate, the server uses an HMAC with SHA1. There are 2 requried HTTP headers:
+
+* `Date`: RFC2822 or ISO 8601 formatted date
+* `Authentication`: Basic HTTP authentication using the base64 encoded string in the form `user_id:HMAC_HASH`
+
+Where `user_id` is received from logging in. The `HMAC_HASH` the output of using `client_token` as the key of the HMAC algorithm with the following as input: 
+
+    HTTP_METHOD+HOSTNAME+URI+UNIX_SECONDS
+
+##### Example
+
+Assume the following request by the user_id `cafebabecafebabe`, and client_token `secret` sent *Saturday, 11-Jul-15 21:00:03 UTC* (RFC2822 time):
+
+    POST http://queueup.louiswilliams.org/api/v2/playlists/c0ffeec0ffee/rename
+
+The message to hash would be the following:
+
+    POST+queueup.louiswilliams.org+/api/v2/playlists/c0ffeec0ffee/rename+1436648403
+
+which yields `2871715b0c9fbf688de5104f83d6c800f30cbe34`. The string
+
+    cafebabecafebabe:2871715b0c9fbf688de5104f83d6c800f30cbe34
+
+is Base64 encoded to yield
+
+    Y2FmZWJhYmVjYWZlYmFiZToyODcxNzE1YjBjOWZiZjY4OGRlNTEwNGY4M2Q2YzgwMGYzMGNiZTM0
+
+The appropriate headers are then:
+
+    Date: Saturday, 11-Jul-15 21:00:03 UTC
+    Authentication: Basic Y2FmZWJhYmVjYWZlYmFiZToyODcxNzE1YjBjOWZiZjY4OGRlNTEwNGY4M2Q2YzgwMGYzMGNiZTM0
+
+*Note: Dates must be withing 5 minutes of server time, so accurate system clocks are necessary*
 
 ### Unauthenticated Routes
 These routes do not require API authentication
 
-- GET `/api/v1/playlists`: Get a list of playlists
+- GET `/api/v2/playlists`: Get a list of playlists
     - **Input**: Nothing
     - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
-- GET `/api/v1/playlists/:playlist_id`: Get details for a playlist, by `_id`.
+- GET `/api/v2/playlists/:playlist_id`: Get details for a playlist, by `_id`.
     - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
  
 ### Authenticated Routes
 Routes that use the following authentication process to allow the subsequent routes
 
-#### Step 1: Register or log in to obtain a `client_token` token.
-
-- POST `/api/v1/auth/register`: Register an account for the first time (without Facebook)
-    - **Input**: Choose one:
-        - `{email: String, password: String, name: String}`: Register with an name/email/password
-    - **Returns**: `{user_id: String, client_token: String}`: **Save this. Required for all API requests**
-- POST `/api/v1/auth/login`: Log in to receive a `client_token` for API requests
-    - **Input**: Choose ONE:
-        - `{email: String, password: String}`: Log in with an email/password
-        - `{facebook_access_token: String}`: Log in with a valid FB access token
-    - **Returns**: `{user_id: String, client_token: String}`: **Save this. Required for all API requests**
-
-#### Step 2: Use the API
 
 Every request from this point on requires a `client_token` and `user_id` attribute in the input. The `client_token` is essentially a password, so keep it secure locally.
 
-- POST `/api/v1/playlists/:playlist_id/skip`: Skip the current track (if allowed)
+- POST `/api/v2/playlists/:playlist_id/skip`: Skip the current track (if allowed)
     - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
-- POST `/api/v1/playlists/:playlist_id/vote`: Vote on a track
+- POST `/api/v2/playlists/:playlist_id/vote`: Vote on a track
     - **Input**: `{track_id: String, vote: Boolean}`: True to vote, false to unvote
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.   
-- POST `/api/v1/users/:user_id`: Get User information
+- POST `/api/v2/users/:user_id`: Get User information
     - **Input**: Nothing
     - **Returns**: `user: User`: A *User* object.
-- POST `/api/v1/users/:user_id/playlists:`: Get User playlists
+- POST `/api/v2/users/:user_id/playlists:`: Get User playlists
     - **Input**: Nothing
     - **Returns**: `playlists: [Playlist]`: Arraw of *Playlist* Objects (without tracks).
 
-API: socket.io
+Socket.io API
 ---
 For clients and players subscribing to playlist updates
 

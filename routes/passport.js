@@ -84,7 +84,8 @@ passport.use(new FacebookStrategy({
             name: ((profile.displayName) ? profile.displayName : profile.id),
             facebook: {
               id: profile.id,
-              name: ((profile.displayName) ? profile.displayName : profile.id),
+              name: profile.name,
+              displayName: ((profile.displayName) ? profile.displayName : profile.id),
               gender: profile.gender,
               profileUrl: profile.profileUrl,
               accessToken: accessToken,
