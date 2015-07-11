@@ -73,7 +73,6 @@ In terms of the API, a **Client** is a read-only listener that subscribes to pla
 
 For requests that do not require event-based socketed connections, like searching for and updating playlist information. See **Objects** section for schema.
 
-
 *Note: All responses send 200 codes on success, 400 on client errors, 403 on unauthorized access, and 500 on server errors. 4xx errors contain an `error` attribute, with an error description, `error.message`*
 
 ### Authenticated/Unauthenticated Routes
@@ -88,8 +87,7 @@ Authenticated routes require the HMAC scheme described below. Unauthenticated ro
 *Note: a request to both of these routes REASSIGNS a `client_token` and invalidates the current one, if it exists.*
 
 - POST `/api/v2/auth/register`: Register an account for the first time (without Facebook)
-    - **Input**: 
-        - `{email: String, password: String, name: String}`: Register with an name/email/password
+    - **Input**: `{email: String, password: String, name: String}`: Register with an name/email/password
     - **Returns**: `{user_id: String, client_token: String}`: **Save these for API requests**
 - POST `/api/v2/auth/login`: Log in to receive a `client_token` for API requests
     - **Input**: Choose ONE:
@@ -137,11 +135,11 @@ The appropriate headers are then:
 ### Unauthenticated Routes
 These routes do not require API authentication, but using authentication exposes certain fields (e.g. which tracks a user has voted on).
 
+- GET `/api/v2/search/tracks/:query/[:offset]`: Search for tracks with a page offset
+    - **Returns**: `{tracks: [Track]}`: Array (max 10) of Spotify *Track* objects. Use the offset at multiples of 10 to get more results.
 - GET `/api/v2/playlists`: Get a list of playlists
-    - **Input**: Nothing
     - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
 - GET `/api/v2/playlists/:playlist_id`: Get details for a playlist, by `_id`.
-    - **Input**: Nothing
     - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
  
 ### Authenticated Routes
