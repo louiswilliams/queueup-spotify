@@ -144,10 +144,10 @@ These routes do not require API authentication, but using authentication exposes
  
 ### Authenticated Routes
 
-- POST `/api/v2/playlists/:playlist_id/new`: Rename the current track (if allowed)
+- POST `/api/v2/playlists/:playlist_id/new`: Create new track
     - **Input**: `{playlist: {name: String}}`: New playlist object (with name)
     - **Returns**: `{playlist: Playlist}`: New *Playlist* object.
-- POST `/api/v2/playlists/:playlist_id/rename`: Rename the current track (if allowed)
+- POST `/api/v2/playlists/:playlist_id/rename`: Rename the current track
     - **Input**: `{name: String}`: New name of playlist
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.
 - POST `/api/v2/playlists/:playlist_id/vote`: Vote on a track
