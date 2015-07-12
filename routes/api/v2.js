@@ -561,8 +561,10 @@ function apiAuthenticate (req, res, next) {
       /* If the user_id was found, continue to verify the signature */
       if (user && user.client_token) {
 
+        /* Note that we truncate the time to the second */
         var message = [req.method, req.hostname, req.originalUrl, reqDate.getTime() / 1000].join('+');
-        console.log("Hashing: '" + message + "'");
+        
+        // console.log("Hashing: '" + message + "'");
         /* Compute the HMAC digest of the URL */
         var digest = crypto.createHmac('sha1', user.client_token).update(message).digest('hex');
 
