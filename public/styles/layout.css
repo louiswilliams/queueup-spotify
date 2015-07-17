@@ -469,6 +469,9 @@ a.list_item:hover{
 .list_item .list_item_title {
   padding-top: 12px;
   font-size: 1em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .list_item .list_item_desc {

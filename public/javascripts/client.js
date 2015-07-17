@@ -301,7 +301,7 @@ $(document).ready(function() {
   /* Handles a new play state sent to the client */
   socket.on('track_progress_update', function (update) {
     var percent = 100 * (update.progress / update.duration);
-    console.log("Progress: " + percent);
+    // console.log("Progress: " + percent);
     $progress_bar.animate({width: percent + "%"}, 250);
   });
 

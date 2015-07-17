@@ -1,8 +1,9 @@
-var express = require('express');
 var async = require('async');
+var express = require('express');
+var ObjectID = require('mongodb').ObjectID;
+var transform = require('../query/transform');
 var utils = require('../utils');
 var router = express.Router();
-var ObjectID = require('mongodb').ObjectID;
 
 
 // router.use(function (req, res, next) {
@@ -21,8 +22,10 @@ router.param('playlist', function(req, res, next, id) {
        return next(new Error("Find playlist Error: " + err));
     }
     if (playlist) {
-      req.playlist = playlist;
-      return next();
+      transform.playlist(playlist, function (p) {
+        req.playlist = p;
+        return next();
+      });
     } else {
        return next(new Error("Cound't find playlist " + id));
     }
@@ -101,23 +104,20 @@ router.post('/:playlist/:name?/play', function(req, res) {
 
   // Only the administrator can play/pause the track
   // if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
-    playlists.update(
+    playlists.findAndModify(
       { _id: req.playlist._id },
       { $set: {
          play: play,
          last_updated: new Date().getTime()
         }
-      }, function() {
+      }, {"new": true}).success(function (playlist) {
          console.log("Updated play to " + play);
          // Update socket playlists
-         req.io.to(req.playlist._id).emit('state_change', {
-           play: play,
-           volume: req.playlist.volume,
-           track: req.playlist.current,
-           trigger: "play"
-         });
-         // Send current state back
-         res.json({play: play});
+
+        utils.emitStateChange(req.io, {playlist: playlist}, "play");
+
+        // Send current state back
+        res.json({play: play});
     });    
   // } else {
   //   res.json({error: "Only admin can play/pause"})
@@ -144,13 +144,10 @@ router.post('/:playlist/:name?/volume', function(req, res) {
       }
     }).success(function(playlist) {
        console.log("Updated volume to ", volume);
+       
        // Update socket playlists
-       req.io.to(req.playlist._id).emit('state_change', {
-         play: playlist.play,
-         volume: volume,
-         track: playlist.current,
-         trigger: "volume"
-       });
+       utils.emitStateChange(req.io, {playlist: req.playlist}, "volume");
+
        // Send current state back
        res.json({volume: volume});
     }).error(function (err) {
@@ -191,7 +188,7 @@ router.post('/:playlist/:name?/skip', function(req, res) {
       if (playlist) {
         /* Broadcast the change */
 
-        utils.emitStateChange(req.io, playlist, "next_track");
+        utils.emitStateChange(req.io, {playlist: playlist}, "next_track");
 
         res.json({message: "Skipped track"});
       } else {
@@ -221,16 +218,9 @@ router.post('/:playlist/:name?/delete/:id', function(req, res) {
     }, {
       "new": true
     }).success(function (playlist) {
-      var queue = (playlist.tracks) ? playlist.tracks : [];
       console.log(playlist);
 
-      req.io.to(playlist._id).emit('state_change', {
-        queue: queue,
-        play: playlist.play,
-        volume: playlist.volume,
-        track: playlist.current,
-        trigger: "track_deleted"
-      });
+      utils.emitStateChange(req.io, {playlist: playlist}, "track_deleted");
 
       res.json({message: "Deleted successfully"});
     }).error(function (err) {
@@ -271,10 +261,7 @@ router.post('/:playlist/:name?/vote/:id', function(req, res) {
     var queue = (playlist.tracks) ? playlist.tracks : [];
     console.log(playlist);
 
-    req.io.to(playlist._id).emit('state_change', {
-      queue: queue,
-      trigger: "upvote"
-    });
+    utils.emitStateChange(req.io, {playlist: playlist}, "upvote");
 
     res.json({message: "Voted successfully"});
   }).error(function (err) {
@@ -306,13 +293,8 @@ router.post('/:playlist/:name?/reorder', function(req, res) {
       "new": true
     }).success(function (playlist) {
 
-      req.io.to(playlist._id).emit('state_change', {
-        queue: playlist.tracks,
-        play: playlist.play,
-        volume: playlist.volume,
-        track: playlist.current,
-        trigger: "queue_reordered"
-      });
+      utils.emitStateChange(req.io, {playlist: playlist}, "queue_reordered");
+
       res.json({message: "Reordered successfully"});
 
     }).error(function (err) {

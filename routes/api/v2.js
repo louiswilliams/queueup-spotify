@@ -14,6 +14,7 @@ var Graph = require('../../graph');
 var monk = require('monk');
 var router = express.Router();
 var utils = require('../../utils');
+var transform = require('../../query/transform');
 
 var ObjectID = require('mongodb').ObjectID;
 var db = monk('localhost:27017/queueup');
@@ -182,14 +183,62 @@ router.param('playlist', function(req, res, next, id) {
       sendBadRequest(res, "Find playlist Error: " + err);
     }
     if (playlist) {
-      req.playlist = playlist;
-      return next();
+
+      transform.playlist(playlist, function (playlist) {
+        req.playlist = playlist;
+        return next();
+      });
     } else {
       sendBadRequest(res, "Couldn't find playlist " + id);
     }
 
   }); 
 });
+
+function transformPlaylist (req, playlist) {
+  /* Specify whether or not the current user is a voter */  
+
+  var tracks = playlist.tracks;
+  if (tracks && tracks.length > 0) {
+
+    tracks.forEach(function (track) {
+      
+      /* Assume the user hasn't voted on the track */
+      track.userIsVoter = false;
+      track.votes = (!track.votes) ? 0 : track.votes;
+
+      if (track.voters && track.voters.length > 0) {
+
+        /* If the apiUser is a voter, indicate that */
+        if (req.apiUser) {
+
+          track.voters.forEach(function (voter) {
+            if (voter._id.equals(req.apiUser._id)) {
+              track.userIsVoter = true;
+            }
+          });
+        }
+        /* Keep this open for now */
+        // delete track.voters;
+
+      }
+    });
+
+    /* Put them in the right order */
+    tracks.sort(function (a, b) {
+      if (b.votes > a.votes) return 1;
+      if (a.votes > b.votes) return -1;
+      if (!a.dateAdded && !b.dateAdded) return 0;
+      if (!b.dateAdded) return 1;
+      if (!a.dateAdded) return -1;
+      return (a.dateAdded - b.dateAdded);
+    });
+  }
+
+
+
+  return playlist;
+}
 
 /* User_id parameter */
 router.param('user', function(req, res, next, id) {
@@ -441,12 +490,18 @@ router.post('/playlists/:playlist/vote', function (req, res) {
 
         /* If the track hasn't disappeared for some reason since last check*/
         if (newPlaylist != null) {
+
           utils.emitStateChange(req.io, newPlaylist, "vote");
-          res.json({playlist: newPlaylist});
+
+          transform.playlist(newPlaylist, function (playlist) {
+            res.json({playlist: playlist});
+          });
         } else {
           console.log("No track found in playlist");
           sendBadRequest(res, "No track found in playlist");
         }
+
+        
       }).error(function (err) {
         res.json({error: err});
       });

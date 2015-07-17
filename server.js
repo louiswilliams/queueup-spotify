@@ -1,3 +1,7 @@
+/** 
+ *  QueueUp Server
+ */
+
 var apiRouter = require('./routes/api');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
@@ -98,7 +102,7 @@ io.on('connection', function(socket) {
             
             /* Attach new socket listeners*/
             socket.emit("auth_response");
-            subscribeListen(user._id, socket);
+            subscribeListen(user, socket);
 
           } else {
             console.log("Client not found");
@@ -153,13 +157,8 @@ io.on('connection', function(socket) {
 
         var queue = (playlist.tracks) ? playlist.tracks : [];
         // Send an initial update
-        socket.emit('state_change', {
-          play: playlist.play,
-          volume: playlist.volume,
-          track: playlist.current,
-          queue: playlist.tracks,
-          trigger: "playlist_connect"
-        });
+
+        utils.sendStateChange(socket, playlist, "playlist_connect");
 
         socket.on('client_play_pause', function(play_state) {
           if (typeof(play_state) == 'string') {
@@ -174,10 +173,8 @@ io.on('connection', function(socket) {
             }},
             {"new": true}
           ).success(function (playlist) {
-            io.to(playlist._id).emit('state_change', {
-              play: playlist.play,
-              trigger: "client_play_pause"
-            });
+
+            utils.emitStateChange(io, playlist, "client_play_pause");
           }).error(function (err) {
             console.log(err);
           });
@@ -219,7 +216,10 @@ io.on('connection', function(socket) {
   });
 });
 
-function subscribeListen(user_id, socket) {
+/* New Socket listeners */
+
+
+function subscribeListen(user, socket) {
 
   var client_subscription;
   var player_subscription;
@@ -251,7 +251,7 @@ function subscribeListen(user_id, socket) {
 
     /* Player is sending progress updates */
     socket.on("track_progress", function (data) {
-      console.log("Updating progress", data);
+      // console.log("Updating progress", data);
 
       /* Don't do anything if no longer current (possibly from forced override) */
       isCurrentPlayer(function () {
@@ -329,10 +329,10 @@ function subscribeListen(user_id, socket) {
       /* If the user is the admin of a playlist */
       if (playlist) {
         /* Because they are both objects, compare them as strings...*/
-        if (JSON.stringify(playlist.player) == JSON.stringify(user_id)) {
+        if (JSON.stringify(playlist.player) == JSON.stringify(user._id)) {
           trueCall();
         } else {
-          falseCall("User " + user_id + " is not current player (" + playlist.player +")");
+          falseCall("User " + user._id + " is not current player (" + playlist.player +")");
         }
       } else {
         falseCall("Playlist " + player_subscription + " not found");
@@ -379,7 +379,7 @@ function subscribeListen(user_id, socket) {
     }
 
     /* Check the playlist id*/
-    Playlists.findOne({_id: playlist_id, admin: user_id}).success( function (playlist) {
+    Playlists.findOne({_id: playlist_id, admin: user._id}).success( function (playlist) {
 
       /* If the user is the admin of a playlist */
       if (playlist) {
@@ -394,7 +394,7 @@ function subscribeListen(user_id, socket) {
         } else {
           Playlists.update({_id: playlist._id}, {
             $set: {
-              player: user_id
+              player: user._id
             }
           }, {"new": true}).success(function (playlist) {
 
@@ -409,7 +409,7 @@ function subscribeListen(user_id, socket) {
           });
         }
       } else {
-        console.log("No playlist " + playlist_id + " with " + user_id + " as an admin");
+        console.log("No playlist " + playlist_id + " with " + user._id + " as an admin");
         socket.emit("player_subscribe_response", {error: {message: "No playlist with this user as an admin"}});
       }
     }).error (function (err) {

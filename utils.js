@@ -1,9 +1,11 @@
-var SpotifyWebApi = require('spotify-web-api-node');
-var fs = require('fs');
 var monk = require('monk');
-var db = monk('localhost:27017/queueup');
+var fs = require('fs');
 var ObjectID = require('mongodb').ObjectID;
+var SpotifyWebApi = require('spotify-web-api-node');
 
+var transform = require('./query/transform')
+
+var db = monk('localhost:27017/queueup');
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}));
 
 exports.normalizeName = function (name) {
@@ -48,46 +50,51 @@ exports.getUserPlaylistTracks = function (user, playlist, callback) {
 
 exports.skipTrack = function (playlist, callback) {
   
-  /* If there's anything in the queue */
-  if (playlist.tracks && playlist.tracks.length > 0) {
+  transform.playlist(playlist, function (playlist) {
+    /* If there's anything in the queue */
+    if (playlist.tracks && playlist.tracks.length > 0) {
 
-    /* Store the first track */
-    var first = playlist.tracks[0];
-    console.log("Removing: ", first.track.id);
+      /* Store the first track */
+      var first = playlist.tracks[0];
+      console.log("Removing: ", first.track.id);
 
-    /* Remove the first track from the DB, set the current as the stored track */
-    db.get('playlists').findAndModify({
-      _id: playlist._id
-    }, {
-      $set: {current: first.track},
-      $pop: {tracks: -1}
-    }, {
-      "new": true
-    }).success(function (playlist) {
+      /* Remove the first track from the DB, set the current as the stored track */
+      db.get('playlists').findAndModify({
+        _id: playlist._id
+      }, {
+        $set: {current: first.track},
+        $pull: {tracks: { _id: first._id}}
+      }, {
+        "new": true
+      }).success(function (playlist) {
 
-      callback(playlist);
+        transform.playlist(playlist, function (transformed) {
+          callback(playlist);
+        });
 
-    }).error(function (err) {
-      callback(null, {error: err});
-    });
+      }).error(function (err) {
+        callback(null, {error: err});
+      });
 
-  } else {
-    db.get('playlists').findAndModify({
-      _id: playlist._id
-    }, {
-      $set: {current: null}
-    }, {
-      "new": true
-    }).success(function (playlist) {
+    } else {
+      db.get('playlists').findAndModify({
+        _id: playlist._id
+      }, {
+        $set: {current: null}
+      }, {
+        "new": true
+      }).success(function (playlist) {
 
-      callback(playlist);
+        transform.playlist(playlist, function (transformed) {
+          callback(playlist);
+        });
 
-    }).error(function (err) {
-      callback(null, err);
-    });
+      }).error(function (err) {
+        callback(null, err);
+      });
 
-  }
-
+    }
+  });
 }
 
 exports.userIsPlaylistAdmin = function (user, playlist) {
@@ -134,7 +141,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         ).success(function(playlist) {
 
           /* playlist found in DB */
-          exports.emitStateChange(req.io, playlist, "add_track");
+          exports.emitStateChange(req.io, {playlist: playlist}, "add_track");
 
           callback(null, playlist);
 
@@ -153,7 +160,8 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
             $push: {
               tracks: {
                 _id: new ObjectID(),
-                track: track
+                track: track,
+                dateAdded: new Date().getTime()
               }
             }
           }, {"new": true}
@@ -162,7 +170,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
           /* Added successfully */
           console.log("Added track: ", track.id);
 
-          exports.emitStateChange(req.io, playlist, "add_track_queue");
+          exports.emitStateChange(req.io, {playlist: playlist}, "add_track_queue");
           
           callback(null, playlist);
         }).error(function (err) {
@@ -180,22 +188,44 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
   });
 }
 
-exports.emitStateChange = function (io, playlist, trigger) {
-  io.to(playlist._id).emit('state_change', {
-    play: playlist.play,
-    track: playlist.current,
-    queue: playlist.tracks,
-    trigger: trigger
+
+/* Broadcast to every listener in the 'room' */
+exports.emitStateChange = function (io, playlist, proj, trigger) {
+
+  // TODO: IMPLEMENT PROJECTIONS
+  if (typeof (proj) == "string") {
+    trigger = proj;
+  }
+
+  /* Transform with the current state (playlist field is required) */
+  transform.playlist(playlist, function (playlist) {
+
+    /* Send update */
+    io.to(playlist._id).emit('state_change', {
+      play: playlist.play,
+      track: playlist.current,
+      queue: playlist.tracks,
+      trigger: trigger
+    });
   });
+
 }
 
+
+/* Send to specific client */
 exports.sendStateChange = function (socket, playlist, trigger) {
-  socket.emit('state_change', {
-    play: playlist.play,
-    track: playlist.current,
-    queue: playlist.tracks,
-    trigger: trigger
+
+  /* Transform with state */
+  transform.playlist(playlist, function (playlist) {
+    /* Send update */
+    socket.emit('state_change', {
+      play: playlist.play,
+      track: playlist.current,
+      queue: playlist.tracks,
+      trigger: trigger
+    });
   });
+
 }
 
 exports.trackSimplify = function (track) {
