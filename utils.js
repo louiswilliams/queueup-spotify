@@ -141,7 +141,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         ).success(function(playlist) {
 
           /* playlist found in DB */
-          exports.emitStateChange(req.io, {playlist: playlist}, "add_track");
+          exports.emitStateChange(req.io, playlist, "add_track");
 
           callback(null, playlist);
 
@@ -170,7 +170,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
           /* Added successfully */
           console.log("Added track: ", track.id);
 
-          exports.emitStateChange(req.io, {playlist: playlist}, "add_track_queue");
+          exports.emitStateChange(req.io, playlist, "add_track_queue");
           
           callback(null, playlist);
         }).error(function (err) {
@@ -186,6 +186,99 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
     }
     
   });
+}
+
+exports.voteOnTrack = function (apiUserId, playlistId, trackId, upvote, success, badRequest, error) {
+  
+  var Playlists = db.get('playlists');
+
+  /* First get playlist and track where the user is a voter */
+  Playlists.findOne({
+    _id: playlistId,
+    tracks: {
+      $elemMatch: {
+        _id: ObjectID(trackId),
+        voters: {
+          $elemMatch: {
+            _id: apiUserId
+          }
+        }
+      }
+    }
+  }).success(function (playlist) {
+
+    var updateQuery;
+
+    console.log("Voting", upvote);
+
+    /* If we are to add a vote and the user isn't already a voter on the track */
+    if (upvote && !playlist) {
+
+      /* Increments the votes and pushes the user to the list */
+      updateQuery = {
+        $inc: {
+          "tracks.$.votes": 1
+        },
+        $push: {
+          "tracks.$.voters": {
+            _id: apiUserId
+          }
+        }
+      };
+
+    /* If the user is a voter and we are removing the vote */
+    } else if (!upvote && playlist) {
+
+      /* Decrement and remove the voter */
+      updateQuery = {
+        $inc: {
+        "tracks.$.votes": -1
+        },
+        $pull: {
+          "tracks.$.voters": {
+            _id: apiUserId
+          }
+        }
+      };
+    } else {
+      if (upvote) {
+        badRequest("The user has already voted on this track");
+      } else {
+        badRequest("The user hasn't voted on this track yet");  
+      }
+    }
+
+    /* If we have a valid scenario */
+    if (updateQuery) {
+
+      /* Do the update */
+      Playlists.findAndModify({
+        _id: playlistId,
+        "tracks._id": ObjectID(trackId)
+      }, updateQuery, {
+        "new": true
+      }).success(function (newPlaylist) {
+
+        /* If the track hasn't disappeared for some reason since last check*/
+        if (newPlaylist != null) {
+
+          success(newPlaylist);
+        } else {
+          console.log("No track found in playlist");
+          badRequest("No track found in playlist");
+        }
+
+        
+      }).error(function (err) {
+        error(err);
+      });
+    } 
+
+  }).error(function (err) {
+    error(err);
+  });
+
+
 }
 
 

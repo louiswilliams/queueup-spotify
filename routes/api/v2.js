@@ -195,51 +195,6 @@ router.param('playlist', function(req, res, next, id) {
   }); 
 });
 
-function transformPlaylist (req, playlist) {
-  /* Specify whether or not the current user is a voter */  
-
-  var tracks = playlist.tracks;
-  if (tracks && tracks.length > 0) {
-
-    tracks.forEach(function (track) {
-      
-      /* Assume the user hasn't voted on the track */
-      track.userIsVoter = false;
-      track.votes = (!track.votes) ? 0 : track.votes;
-
-      if (track.voters && track.voters.length > 0) {
-
-        /* If the apiUser is a voter, indicate that */
-        if (req.apiUser) {
-
-          track.voters.forEach(function (voter) {
-            if (voter._id.equals(req.apiUser._id)) {
-              track.userIsVoter = true;
-            }
-          });
-        }
-        /* Keep this open for now */
-        // delete track.voters;
-
-      }
-    });
-
-    /* Put them in the right order */
-    tracks.sort(function (a, b) {
-      if (b.votes > a.votes) return 1;
-      if (a.votes > b.votes) return -1;
-      if (!a.dateAdded && !b.dateAdded) return 0;
-      if (!b.dateAdded) return 1;
-      if (!a.dateAdded) return -1;
-      return (a.dateAdded - b.dateAdded);
-    });
-  }
-
-
-
-  return playlist;
-}
-
 /* User_id parameter */
 router.param('user', function(req, res, next, id) {
 
@@ -423,92 +378,18 @@ router.post('/playlists/:playlist/vote', function (req, res) {
   var trackId = req.body.track_id;
   var upvote = req.body.vote;
 
-  /* First get playlist and track where the user is a voter */
-  Playlists.findOne({
-    _id: req.playlist._id,
-    tracks: {
-      $elemMatch: {
-        _id: ObjectID(trackId),
-        voters: {
-          $elemMatch: {
-            _id: req.apiUser._id
-          }
-        }
-      }
-    }
-  }).success(function (playlist) {
+  utils.voteOnTrack(req.apiUser._id, req.playlist._id, trackId, upvote,
+    function (playlist) {
 
-    var updateQuery;
+      utils.emitStateChange(req.io, playlist, "vote");
 
-    /* If we are to add a vote and the user isn't already a voter on the track */
-    if (upvote && !playlist) {
-
-      /* Increments the votes and pushes the user to the list */
-      updateQuery = {
-        $inc: {
-          "tracks.$.votes": 1
-        },
-        $push: {
-          "tracks.$.voters": {
-            _id: req.apiUser._id
-          }
-        }
-      };
-
-    /* If the user is a voter and we are removing the vote */
-    } else if (!upvote && playlist) {
-
-      /* Decrement and remove the voter */
-      updateQuery = {
-        $inc: {
-        "tracks.$.votes": -1
-        },
-        $pull: {
-          "tracks.$.voters": {
-            _id: req.apiUser._id
-          }
-        }
-      };
-    } else {
-      if (upvote) {
-        sendBadRequest(res, "The user has already voted on this track");
-      } else {
-        sendBadRequest(res, "The user hasn't voted on this track yet");  
-      }
-    }
-
-    /* If we have a valid scenario */
-    if (updateQuery) {
-
-      /* Do the update */
-      Playlists.findAndModify({
-        _id: req.playlist._id,
-        "tracks._id": ObjectID(trackId)
-      }, updateQuery, {
-        "new": true
-      }).success(function (newPlaylist) {
-
-        /* If the track hasn't disappeared for some reason since last check*/
-        if (newPlaylist != null) {
-
-          utils.emitStateChange(req.io, newPlaylist, "vote");
-
-          transform.playlist(newPlaylist, function (playlist) {
-            res.json({playlist: playlist});
-          });
-        } else {
-          console.log("No track found in playlist");
-          sendBadRequest(res, "No track found in playlist");
-        }
-
-        
-      }).error(function (err) {
-        res.json({error: err});
+      transform.playlist(playlist, function (playlist) {
+        res.json({playlist: playlist});
       });
-    } 
-
-  }).error(function (err) {
-    res.json({error: err});
+  }, function (message) {
+    sendBadRequest(res, message);
+  }, function (err) {
+    sendServerError(err);
   });
 
 });

@@ -6,14 +6,6 @@ var utils = require('../utils');
 var router = express.Router();
 
 
-// router.use(function (req, res, next) {
-//   if (!req.user) {
-//     req.session.redirect_after = req.protocol + '://' + req.get('host') + req.originalUrl;
-//     return res.redirect("/auth/facebook");
-//   }
-//   return next();  
-// });
-
 // playlist param
 router.param('playlist', function(req, res, next, id) {
   var playlists = req.db.get('playlists');
@@ -235,38 +227,31 @@ router.post('/:playlist/:name?/delete/:id', function(req, res) {
 // POST /playlist/:playlist/vote/:id
 router.post('/:playlist/:name?/vote/:id', function(req, res) {
 
+  console.log("REQ:", req.body);
+  if (req.body.vote == undefined ) {
+    return res.json({error: "Send vote field"});
+  }
+
+  var upvote = (req.body.vote == 'true') ? true : false;
+
   if (!req.user) {
-    req.session.redirect_after = req.protocol + '://' + req.get('host') + '/playlist/' + req.playlist._id;
+    req.session.redirect_after = req.protocol + ':\/\/' + req.get('host') + '/playlist/' + req.playlist._id;
     
     return res.json({redirect: "/auth/facebook"});
   }
 
   var playlists = req.db.get('playlists');
-
   var trackId = req.params.id;
 
-  playlists.findAndModify({
-    _id: req.playlist._id,
-    "tracks._id": trackId
-  }, {
-    $inc: {
-      "tracks.$.votes": 1
-    },
-    $push: {
-      "tracks.$.voters": req.user._id
-    }
-  }, {
-    "new": true
-  }).success(function (playlist) {
-    var queue = (playlist.tracks) ? playlist.tracks : [];
-    console.log(playlist);
-
-    utils.emitStateChange(req.io, playlist, "upvote");
-
-    res.json({message: "Voted successfully"});
-  }).error(function (err) {
-    res.end(err);
-  });
+  utils.voteOnTrack(req.user._id, req.playlist._id, trackId, upvote,
+    function (playlist) {
+      utils.emitStateChange(req.io, playlist, "vote_on_track");
+      res.json({message: "Voted"})
+    }, function (message) {
+      res.json({error: message});
+    }, function (error) {
+      res.json({error: error});
+    });
 });
 
 router.post('/:playlist/:name?/reorder', function(req, res) {

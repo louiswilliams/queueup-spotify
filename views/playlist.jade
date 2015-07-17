@@ -13,6 +13,7 @@ html
     script.
       var playlistId="#{playlist._id}";
       var isAdmin=#{is_admin};
+      var userId="#{(user) ? user._id : null}";
       var pretty=#{pretty};
     
     script(src="/socket.io/socket.io.js")
@@ -42,9 +43,9 @@ html
 
       #current(style="background-image: url('" + album_art_url + "')")
           
-          if !pretty && is_admin
-            #volumewrap
-              input#volume(class="dial", type="text", value=playlist.volume)
+          // if !pretty && is_admin
+          //   #volumewrap
+          //     input#volume(class="dial", type="text", value=playlist.volume)
 
           #current_title
 
@@ -75,21 +76,20 @@ html
 
 
       ul.listing#queue
-        each track, i in queue
-          li.list_item(data-id="#{track.sequence}")
-            .list_item_image
+        //- each track, i in queue
+        //-   li.list_item(data-id="#{track.sequence}")
+        //-     .list_item_image
 
-              img(src=track.track.album.images.pop().url)
-            
-            if (false)
-                .voting
-                    a.upvote(href="/playlist/#{playlist._id}/#{playlist.key}/vote/#{track._id}")
-                        .fa.fa-arrow-up
-                    .votes= track.votes
-            .fa.fa-bars.list_item_drag
-            if is_admin
-                a.fa.fa-trash.list_item_delete(href="/playlist/#{playlist._id}/#{playlist.key}/delete/#{track._id}")
-            .list_item_title= track.track.name
-            .list_item_desc= track.track.artists[0].name
+        //-       img(src=track.track.album.images.pop().url)
+           
+        //-     .voting
+        //-       a.upvote(href="/playlist/#{playlist._id}/#{playlist.key}/vote/#{track._id}")
+        //-         .fa.fa-chevron-up
+        //-       .votes= track.votes
+        //-     // .fa.fa-bars.list_item_drag
+        //-     if is_admin
+        //-         a.fa.fa-trash.list_item_delete(href="/playlist/#{playlist._id}/#{playlist.key}/delete/#{track._id}")
+        //-     .list_item_title= track.track.name
+        //-     .list_item_desc= track.track.artists[0].name
             
                 

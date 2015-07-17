@@ -347,20 +347,27 @@ ul {
 
 #queue .list_item .voting {
   width: 21px;
-  float: left;
-  margin-top: 15px;
+  float: right;
+  margin-top: 11px;
   margin-left: 0px;
-  font-size: 1em;
-  margin-right: 7px;
+  font-size: 1.25em;
+  margin-right: 2px;
   text-align: center;
   line-height: 1.1em;
+  color: #aaa;
 }
 
 #queue .list_item .voting .upvote{
   display: inline-block;
+  color: #888;
+}
+
+#queue .list_item .voting .upvote-true{
+  color: #fff;
 }
 
 #queue .list_item .voting .votes{
+  font-size: 0.75em;
   display: inline-block;
 }
 

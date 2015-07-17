@@ -35,6 +35,7 @@ $(document).ready(function() {
   var startPosition = 0;
 
   /* Make queue sortable */
+/*
   $queue.sortable({
     start: function(event, ui) {
       startPosition = ui.item.index();
@@ -56,7 +57,7 @@ $(document).ready(function() {
     handle: '.list_item_drag',
     cursor: 'move'
   });
-
+*/
 
   /* Play/pause button pressed */
   $play_pause.click(function(e) {
@@ -130,7 +131,9 @@ $(document).ready(function() {
 
   $("#queue").on("click", ".upvote", function(e) {
     e.preventDefault();
-    $.post(this.href).done(function(data) {
+    var vote = ($(this).data("user-vote")) ? false : true ;
+
+    $.post(this.href, {vote: vote}).done(function(data) {
       if (data.redirect) {
         window.location.href = data.redirect;
       }
@@ -191,7 +194,7 @@ $(document).ready(function() {
       /* This cancels any slow and unfinished operations */
       if (searchAjax) { searchAjax.abort(); }
 
-      searchAjax = $.ajax("/spotify/search/" + query + "/" + search_offset);
+      searchAjax = $.ajax(serverUrl + "/spotify/search/" + query + "/" + search_offset);
       searchAjax.success(function(data) {
         if (data.error) {
           console.log(data);
@@ -202,7 +205,7 @@ $(document).ready(function() {
         resultsHtml += "<a class='search_prev fa fa-angle-double-up' href='#'></a>"
         $.each(data, function(i, track) {
           resultsHtml += "<a class='list_item' data-id='" + i + "' "
-            + "href='" + document.URL + "/add/" + track.id + "'>"
+            + "href='" + playlistUrl + "/add/" + track.id + "'>"
             + "<div class='list_item_image'><img src='" + track.album.images[2].url + "'/></div>"
             + "<div class='list_item_title'>" + track.name + "</div>"
             + "<div class='list_item_desc'>" + track.artist + "</div>"
@@ -333,14 +336,27 @@ $(document).ready(function() {
       resultsHtml += "<li class='list_item' data-id='" + entry._id + "'>";
         resultsHtml += "<div class='list_item_image'><img src='" + entry.track.album.images[2].url + "'/></div>";
 
-/*
+        console.log("Track, voters: ", entry._id, entry.voters);
+
+        var userIsVoter = false;
+        if (entry.voters && userId) {
+          for (var i = 0; i < entry.voters.length; i++) {
+            var voter = entry.voters[i];
+            if (voter._id == userId) {
+              userIsVoter = true;
+            }
+          }
+        }
+
+        var voteClass = "upvote";
+        voteClass = (userIsVoter) ? voteClass + " upvote-true" : voteClass;
         resultsHtml += "<div class='voting'>";
-          resultsHtml += "<a class='upvote' href='" + playlistUrl + "/vote/" + entry._id + "'><div class='fa fa-arrow-up'></div></a>";
+          resultsHtml += "<a class='" + voteClass + "' data-user-vote=" + userIsVoter + " href='" + playlistUrl + "/vote/" + entry._id + "'><div class='fa fa-chevron-up'></div></a>";
           resultsHtml += "<div class='votes'>" + ((entry.votes) ? entry.votes : 0) + "</div>";
         resultsHtml += "</div>";
-*/
+
       if (!pretty) {
-        resultsHtml += "<div class='list_item_drag fa fa-bars'></div>";
+//        resultsHtml += "<div class='list_item_drag fa fa-bars'></div>";
         if (isAdmin) {
           resultsHtml += "<a href ='" + playlistUrl + '/delete/' + entry._id + "' class='list_item_delete fa fa-trash'></a>";
         }
