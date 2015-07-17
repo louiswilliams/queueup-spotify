@@ -114,7 +114,7 @@ router.post('/:playlist/:name?/play', function(req, res) {
          console.log("Updated play to " + play);
          // Update socket playlists
 
-        utils.emitStateChange(req.io, {playlist: playlist}, "play");
+        utils.emitStateChange(req.io, playlist, "play");
 
         // Send current state back
         res.json({play: play});
@@ -146,7 +146,7 @@ router.post('/:playlist/:name?/volume', function(req, res) {
        console.log("Updated volume to ", volume);
        
        // Update socket playlists
-       utils.emitStateChange(req.io, {playlist: req.playlist}, "volume");
+       utils.emitStateChange(req.io, req.playlist, "volume");
 
        // Send current state back
        res.json({volume: volume});
@@ -188,7 +188,7 @@ router.post('/:playlist/:name?/skip', function(req, res) {
       if (playlist) {
         /* Broadcast the change */
 
-        utils.emitStateChange(req.io, {playlist: playlist}, "next_track");
+        utils.emitStateChange(req.io, playlist, "next_track");
 
         res.json({message: "Skipped track"});
       } else {
@@ -220,7 +220,7 @@ router.post('/:playlist/:name?/delete/:id', function(req, res) {
     }).success(function (playlist) {
       console.log(playlist);
 
-      utils.emitStateChange(req.io, {playlist: playlist}, "track_deleted");
+      utils.emitStateChange(req.io, playlist, "track_deleted");
 
       res.json({message: "Deleted successfully"});
     }).error(function (err) {
@@ -261,7 +261,7 @@ router.post('/:playlist/:name?/vote/:id', function(req, res) {
     var queue = (playlist.tracks) ? playlist.tracks : [];
     console.log(playlist);
 
-    utils.emitStateChange(req.io, {playlist: playlist}, "upvote");
+    utils.emitStateChange(req.io, playlist, "upvote");
 
     res.json({message: "Voted successfully"});
   }).error(function (err) {
@@ -293,7 +293,7 @@ router.post('/:playlist/:name?/reorder', function(req, res) {
       "new": true
     }).success(function (playlist) {
 
-      utils.emitStateChange(req.io, {playlist: playlist}, "queue_reordered");
+      utils.emitStateChange(req.io, playlist, "queue_reordered");
 
       res.json({message: "Reordered successfully"});
 

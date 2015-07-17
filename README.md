@@ -36,7 +36,7 @@ A QueueUp *Player* is requried to stream from QueueUp. This repository is for th
 
 The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. All of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications).
 
-The `/env.json` configuration file is required with two fields, *name* (environment) and *port* (server listen port)
+The `/env.json` configuration file is required with three fields, *name* (environment), *host* (current hostname, like queueup.louiswilliams.org), and  *port* (server listen port)
 
 A MongoDB Server should be running on `localhost:27017`. This is configurable in `server.js`.
 

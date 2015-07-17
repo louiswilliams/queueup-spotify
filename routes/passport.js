@@ -10,6 +10,7 @@ var db = monk('localhost:27017/queueup');
 
 var router = express.Router();
 
+var envConf = JSON.parse(fs.readFileSync(__dirname + '/../env.json', {encoding: 'utf8'}));
 var facebookSecret = fs.readFileSync(__dirname + "/facebookSecret.key", {encoding: 'utf8'}).trim();
 // var googleSecret = fs.readFileSync(__dirname + "/googleSecret.key", {encoding: 'utf8'}).trim();
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../spotify.key', {encoding: 'utf8'}));
@@ -71,7 +72,7 @@ passport.use(new SpotifyStrategy({
 passport.use(new FacebookStrategy({
     clientID: 737070926399780,
     clientSecret: facebookSecret,
-    callbackURL: "http://queueup.louiswilliams.org/auth/facebook/callback"
+    callbackURL: "http://" + envConf.host + "/auth/facebook/callback"
   }, function(accessToken, refreshToken, profile, done) {
 
     var users = db.get('users');
