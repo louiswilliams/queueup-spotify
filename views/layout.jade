@@ -2,27 +2,28 @@ doctype
 html
   head
     meta(name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no")
-    title #{title} - QueueupServer
+    title #{title} - QueueUp
     script(src="/javascripts/jquery.js")
     link(rel="stylesheet" href="/styles/layout.css")
     link(rel="stylesheet" href="/styles/font-awesome.css")
     link(rel="shortcut icon" type="image/x-icon" href="images/icon.ico")
   body
-    #wrap.dark
-        .page_header
-          .playlist_nav
-            a.nav_home(href='/')
-                
-          .user_nav
+    #wrap
+      .page_header
+        .playlist_nav
+          a.nav_home(href='/')
+        
+        .page_title #{title}
 
-            if typeof(user) == "undefined"
-              | Not logged in. 
-              a.user_header(href='/user')= "Log in with Facebook"
-            else
-              | Logged in as 
-              a.user_header(href='/user')= user.name
-              | . 
-              a.user_header(href='/logout')= "Log out"
-         
-        block content
+        .user_nav
+
+          if typeof(user) == "undefined"
+            a.user_header(href='/user')= "Log in with Facebook"
+          else
+            | 
+            a.user_header(href='/user')= user.name
+            | . 
+            a.user_header(href='/logout')= "Log out"
+       
+      block content
 

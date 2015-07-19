@@ -3,8 +3,6 @@ extends layout
 block content 
     #background(style="background-image: url('" + albumArt + "')")
     
-    h2 Hot playlists
-
     #playlist_listing
       each playlist in playlists
         a.list_item(href="/playlist/" + playlist._id + "/" + playlist.key)

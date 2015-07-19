@@ -32,7 +32,7 @@
   }
 }
 
-@media (min-width : 420px) and (max-width: 639px) {
+@media (min-width : 420px) and (max-width: 599px) {
 
   body {
     font-size: 13pt;
@@ -56,7 +56,27 @@
   }
 }
 
-@media (min-width: 640px) {
+@media (min-width : 600px) and (max-width: 799px) {
+
+  body {
+    font-size: 13pt;
+  }
+
+  #wrap {
+    width: 100%;
+  }
+
+  #queue, #playlist_listing, .playlist_header, #searchwrap, #searchresults {
+    width: 400px;
+  }
+
+  #current {
+    width: 400px;
+    height: 400px;
+  }
+}
+
+@media (min-width: 800px) {
 
   body {
     font-size: 13pt;
@@ -68,7 +88,7 @@
   }
 
   #wrap {
-    width: 600px;
+    width: 800px;
   }
 
   #current {
@@ -81,7 +101,7 @@ body{
   margin: 0px;
   padding: 0px;
   font-family: Sans-Serif;
-  background: #ddd;
+  background: #444;
   color: #111;
 }
 
@@ -117,11 +137,7 @@ ul {
   right: 0px;
   background: #222;
   z-index: -3;
-  filter: blur(5px);
-  -webkit-filter: blur(5px);
-  -moz-filter: blur(5px);
-  -o-filter: blur(5px);
-  -ms-filter: blur(5px);
+  opacity: 0.5;
   background-size: cover;
   background-position: top center;
   background-attachment: fixed;
@@ -146,15 +162,16 @@ ul {
 
 .page_header {
   color: #fff;
-  background: rgba(34,34,34,0.8);
+  background: rgba(25,25,25,0.9);
   height: 28px;
-  padding: 10px 15px;
+  padding: 12px 15px 6px 15px;
   text-shadow: rgba(0,0,0,0.5) 1px 1px 2px
 }
 
 .page_header .playlist_nav{
   display: inline;
   float: left;
+  margin-top: -2px;
 }
 
 .playlist_nav .nav_home {
@@ -166,8 +183,13 @@ ul {
   background-size: contain;
 }
 
+.page_header .page_title {
+  font-size: 1.2em;
+  display: inline;
+  float: left;
+}
+
 .page_header .user_nav{
-  margin-top: 3px;
   display: inline;
   float: right;
 }
@@ -179,7 +201,7 @@ ul {
 .playlist_header {
   margin: 15px auto;
   padding: 1px;
-  background: rgba(34,34,34,0.8);
+  background: rgba(25,25,25,0.9);
 }
 
 .playlist_header .label {
@@ -208,16 +230,14 @@ ul {
   color: #eee;
   white-space: normal;
   /*text-shadow: rgba(0,0,0,0.7) 1px 1px 5px;*/
-  margin-bottom: 15px;
-  margin-left: auto;
-  margin-right: auto;
+  margin: 15px auto;
   position: relative;
   box-shadow: rgba(0,0,0,0.5) 1px 1px 3px 0px;
 }
 
 
 #current_title {
-  background: rgba(0,0,0,0.5);
+  background: rgba(25,25,25,0.9);
   width: 100%;
   position: absolute;
   bottom: 0px;
@@ -376,10 +396,9 @@ ul {
 }
 
 #playlist_listing .list_item {
-  background: rgba(25,25,25,0.8);
+  background: rgba(25,25,25,0.9);
   box-shadow: rgba(0,0,0,0.5) 1px 2px 2px 0px;
-  border-radius: 5px;
-  padding: 8px 10px;
+  padding: 2px 7px 7px 7px;
   margin: 5px 0px;
   color: #eee;
 
@@ -474,7 +493,7 @@ a.list_item:hover{
 }
 
 .list_item .list_item_title {
-  padding-top: 12px;
+  padding-top: 12px; 
   font-size: 1em;
   overflow: hidden;
   white-space: nowrap;
@@ -483,7 +502,8 @@ a.list_item:hover{
 
 .list_item .list_item_desc {
   padding-top: 8px;
-  font-size: 0.8em;
+  font-size: 0.75em;
+  color: #aaa;
 }
 
 .list_item .list_item_drag {

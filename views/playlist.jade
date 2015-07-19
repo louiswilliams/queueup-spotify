@@ -1,95 +1,51 @@
-doctype
-html
-  head
-    meta(name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no")
-    title #{playlist.name} - QueueupServer
-    script(src="/javascripts/jquery.js")
-    link(rel="stylesheet" href="/styles/layout.css")
-    link(rel="stylesheet" href="/styles/font-awesome.css")
-    link(rel="stylesheet" href="/styles/jquery-ui.css")
+extends layout
 
+block content
+  #background(style="background-image: url('" + album_art_url + "')")
+  script.
+    var playlistId="#{playlist._id}";
+    var isAdmin=#{is_admin};
+    var userId="#{(user) ? user._id : null}";
+    var pretty=#{pretty};
+  
+  script(src="/socket.io/socket.io.js")
+  script(src="/javascripts/jquery.knob.js")
+  script(src="/javascripts/jquery-ui.js")
+  script(src="/javascripts/touch-punch.js")
+  script(src="/javascripts/client.js")
 
-    #background(style="background-image: url('" + album_art_url + "')")
-    script.
-      var playlistId="#{playlist._id}";
-      var isAdmin=#{is_admin};
-      var userId="#{(user) ? user._id : null}";
-      var pretty=#{pretty};
-    
-    script(src="/socket.io/socket.io.js")
-    script(src="/javascripts/jquery.knob.js")
-    script(src="/javascripts/jquery-ui.js")
-    script(src="/javascripts/touch-punch.js")
-    script(src="/javascripts/client.js")
+  #current(style="background-image: url('" + album_art_url + "')")
+      
+      // if !pretty && is_admin
+      //   #volumewrap
+      //     input#volume(class="dial", type="text", value=playlist.volume)
 
-    #wrap
+      #current_title
 
-      if !pretty
-        .page_header
-          .playlist_nav
-            a.nav_home(href='/')
-          .user_nav
-            if typeof(user) == "undefined"
-              | Not logged in. 
-              a.user_header(href='/user')= "Log in with Facebook"
+          #current_name= current_name
+          #current_artist= current_artist
+
+          #status
+            if next_state == "pause"
+              a#statusChange.fa.fa-pause(href="#", data-play=play_state, data-id=playlist.key)
             else
-              | Logged in as 
-              a.user_header(href='/user')= user.name
-              | . 
-              a.user_header(href='/logout')= "Log out"
+              a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
+            if !pretty
+              a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
 
-      .playlist_header
-        #playlist_title= playlist.name
+          #playlist_progress
+            div.progress_bar
 
-      #current(style="background-image: url('" + album_art_url + "')")
-          
-          // if !pretty && is_admin
-          //   #volumewrap
-          //     input#volume(class="dial", type="text", value=playlist.volume)
+  if !pretty
+    if is_admin
+      a.import_from_playlist(href="/playlist/#{playlist._id}/#{playlist.key}/import") Import from my playlists
 
-          #current_title
-
-              #current_name= current_name
-              #current_artist= current_artist
-
-              #status
-                if next_state == "pause"
-                  a#statusChange.fa.fa-pause(href="#", data-play=play_state, data-id=playlist.key)
-                else
-                  a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
-                if !pretty
-                  a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
-
-              #playlist_progress
-                div.progress_bar
-
-      if !pretty
-        if is_admin
-          a.import_from_playlist(href="/playlist/#{playlist._id}/#{playlist.key}/import") Import from my playlists
-
-        #searchwrap
-          #searchbox
-              input(type="text" placeholder="Search To Add Tracks")
-              a#search_clear.fa.fa-close(href="#")
-          #searchresults
+    #searchwrap
+      #searchbox
+          input(type="text" placeholder="Search To Add Tracks")
+          a#search_clear.fa.fa-close(href="#")
+      #searchresults
 
 
 
-      ul.listing#queue
-        //- each track, i in queue
-        //-   li.list_item(data-id="#{track.sequence}")
-        //-     .list_item_image
-
-        //-       img(src=track.track.album.images.pop().url)
-           
-        //-     .voting
-        //-       a.upvote(href="/playlist/#{playlist._id}/#{playlist.key}/vote/#{track._id}")
-        //-         .fa.fa-chevron-up
-        //-       .votes= track.votes
-        //-     // .fa.fa-bars.list_item_drag
-        //-     if is_admin
-        //-         a.fa.fa-trash.list_item_delete(href="/playlist/#{playlist._id}/#{playlist.key}/delete/#{track._id}")
-        //-     .list_item_title= track.track.name
-        //-     .list_item_desc= track.track.artists[0].name
-            
-                
+  ul.listing#queue                

@@ -2,7 +2,11 @@ var express = require('express');
 var util = require('../utils');
 var router = express.Router();
 
-router.get('/', function (req, res) {
+// router.get('/', function (req, res) {
+//   res.sendFile('index.html');
+// });
+
+router.get('/home', function (req, res) {
 
   var playlists = req.db.get('playlists');
   playlists.find({}, {
@@ -17,7 +21,7 @@ router.get('/', function (req, res) {
       user = req.user;
     }
     res.render('index', {
-      title: "Home",
+      title: "Hot Playlists",
       playlists: docs,
       user: user,
       home: true,

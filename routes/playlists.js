@@ -84,7 +84,8 @@ function getPlaylist (req, res, pretty) {
     current_album_art: current_album_art,
     user: req.user,
     pretty: pretty,
-    queue: queue
+    queue: queue,
+    title: req.playlist.name
   });
 }
 
