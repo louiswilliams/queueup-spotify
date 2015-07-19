@@ -251,6 +251,8 @@ Objects
     - `trigger` *String*: Mostly for debugging. Identifies what action caused this broadcast.
 
 - *Track*: Simplified version of [Spotify's Track (full)](https://developer.spotify.com/web-api/object-model/#track-object-full).
+    -  `votes` *Number*: Number of votes on the track
+    -  `voters` *[User]*: Array of *User* objects, with only the *_id* parameter
     -  `name` *String*: Track name
     -  `id` *String*: Spotify ID
     -  `uri` *String*: Spotify URI
