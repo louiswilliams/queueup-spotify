@@ -77,7 +77,7 @@ For requests that do not require event-based socketed connections, like searchin
 
 ### Authenticated/Unauthenticated Routes
 
-Authenticated routes require the HMAC scheme described below. Unauthenticated routes do not need to send any additional headers. The `Authentication` header implies the desire to authenticate, and its absense indicates the desire to proceed unauthenticated, if possible. An attempt to access an authenticated route without the `Authentication` header or if the user isn't found return 403 errors, all other bad requests return 400 (like an invalid hash). 
+Authenticated routes require the HMAC scheme described below. Unauthenticated routes do not need to send any additional headers. The `Authorization` header implies the desire to authenticate, and its absense indicates the desire to proceed unauthenticated, if possible. An attempt to access an authenticated route without the `Authorization` header or if the user isn't found return 403 errors, all other bad requests return 400 (like an invalid hash). 
 
 
 ### Authentication
@@ -101,7 +101,7 @@ Authenticated routes require the HMAC scheme described below. Unauthenticated ro
 To authenticate, the server uses an HMAC-SHA1 scheme. There are 2 requried HTTP headers:
 
 * `Date`: RFC2822 or ISO 8601 formatted date
-* `Authentication`: Basic HTTP authentication using the base64 encoded string in the form `user_id:HMAC_HASH`
+* `Authorization`: Basic HTTP authentication using the base64 encoded string in the form `user_id:HMAC_HASH`
 
 Where `user_id` is received from logging in. The `HMAC_HASH` is the output of using `client_token` as the key of the HMAC algorithm with the following as input: 
 
@@ -128,12 +128,12 @@ is Base64 encoded to yield
 The appropriate headers are then:
 
     Date: Saturday, 11-Jul-15 21:00:03 UTC
-    Authentication: Basic Y2FmZWJhYmVjYWZlYmFiZToyODcxNzE1YjBjOWZiZjY4OGRlNTEwNGY4M2Q2YzgwMGYzMGNiZTM0
+    Authorization: Basic Y2FmZWJhYmVjYWZlYmFiZToyODcxNzE1YjBjOWZiZjY4OGRlNTEwNGY4M2Q2YzgwMGYzMGNiZTM0
 
 *Note: Dates must be withing 5 minutes of server time to prevent replay*
 
 ### Unauthenticated Routes
-These routes do not require API authentication, but using authentication exposes certain fields (e.g. which tracks a user has voted on).
+These routes do not require API authentication.
 
 - GET `/api/v2/search/tracks/:query/[:offset]`: Search for tracks with a page offset
     - **Returns**: `{tracks: [Track]}`: Array (max 10) of Spotify *Track* objects. Use the offset at multiples of 10 to get more results.
