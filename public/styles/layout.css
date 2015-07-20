@@ -9,7 +9,7 @@
   }
 
   #wrap {
-    width: 320px;
+    width: 100%;
   }
 
   #queue, #playlist_listing, .playlist_header, #searchwrap, #searchresults {
@@ -38,9 +38,9 @@
     font-size: 13pt;
   }
 
-  #background {
+/*  #background {
     display: none !important;
-  }
+  }*/
 
   #wrap {
     width: 100%;
@@ -171,22 +171,20 @@ ul {
 .page_header .playlist_nav{
   display: inline;
   float: left;
-  margin-top: -2px;
+  margin-top: -7px;
 }
 
 .playlist_nav .nav_home {
   display: block;
-  margin-top: -2px;
   height: 36px;
-  width: 80px;
-  background: url('/images/queueup_logo_white.png') no-repeat;
+  width: 8.5em;
+  background: url('/images/queueup_logo_inverse.png') no-repeat;
   background-size: contain;
 }
 
 .page_header .page_title {
   font-size: 1.2em;
   display: inline;
-  float: left;
 }
 
 .page_header .user_nav{
@@ -197,7 +195,7 @@ ul {
 .user_header {
   display: inline;
 }
-
+e
 .playlist_header {
   margin: 15px auto;
   padding: 1px;

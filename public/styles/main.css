@@ -47,6 +47,12 @@
 		-webkit-text-size-adjust: none;
 	}
 
+	#video_poster {
+		background: url ("../images/main_screenshot.png") #000;
+		width: 100%;
+		height: 100%;
+        }
+
 	.brand img {
 		height: 1.5em;
 	}
