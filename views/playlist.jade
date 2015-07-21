@@ -25,13 +25,14 @@ block content
           #current_name= current_name
           #current_artist= current_artist
 
-          #status
-            if next_state == "pause"
-              a#statusChange.fa.fa-pause(href="#", data-play=play_state, data-id=playlist.key)
-            else
-              a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
-            if !pretty
-              a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
+          if is_admin            
+            #status
+              if next_state == "pause"
+                a#statusChange.fa.fa-pause(href="#", data-play=play_state, data-id=playlist.key)
+              else
+                a#statusChange.fa.fa-play(href="#", data-play=play_state, data-id=playlist.key)
+              if !pretty
+                a.fa.fa-step-forward#next(href="#", data-id=playlist.key)
 
           #playlist_progress
             div.progress_bar

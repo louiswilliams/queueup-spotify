@@ -18,16 +18,12 @@
 					<p>Social, real-time playlists</p>
 					<ul class="actions">
 						<li><a href="home/" class="button special icon fa-desktop">Desktop Site</a></li>
-						<li><a href="play.google.com" class="button special icon fa-android">Android Player</a></li>
+						<li><a href="android.html" class="button special icon fa-android">Android Player</a></li>
 						<li><a href="#one" class="button icon fa-chevron-down scrolly">Learn More</a></li>
 					</ul>
 				</div>
 				<div class="image phone"><div class="inner">
-					<video width="100%" loop autoplay muted poster="/images/main_screenshot.png">
-						<source src="/videos/queueup_demo_480p.mp4" type="video/mp4">
-						<source src="/videos/queueup_demo_480p.mp4" type="video/webm">
-HTML5 video not supported
-					</video>
+					<img src="/images/main_screenshot.png"/>
 				</div></div>
 			</header>	
 
@@ -42,21 +38,33 @@ HTML5 video not supported
 			<section id="two" class="wrapper">
 				<div class="inner alt">
 					<section class="spotlight">
-						<div class="image"><img src="images/create_playlist.png" alt="" /></div>
+						<div class="image">
+							<video width="100%" autoplay loop poster="images/create_playlist.png" alt="">
+								<source src="videos/demo_create_playlist.mp4">
+							</video>
+						</div>
 						<div class="content">
 							<h3>Create a Playlist</h3>
-							<p>Give it a name so friends can find it</p>
+							<p>Give it a name and add some tracks.</p>
 						</div>
 					</section>
 					<section class="spotlight">
-						<div class="image"><img src="images/add_track.png" alt="" /></div>
+						<div class="image">
+							<video width="100%" autoplay loop poster="images/add_track.png" alt="">
+								<source src="videos/demo_play.mp4">
+							</video>			
+						</div>
 						<div class="content">
-							<h3>Add Tracks</h3>
-							<p>Add some tracks and start playing.</p>
+							<h3>Start playing</h3>
+							<p>Use your phone to stream the playlist.</p>
 						</div>
 					</section>
 					<section class="spotlight">
-						<div class="image"><img src="images/be_social.png" alt="" /></div>
+						<div class="image">
+							<video width="100%" autoplay loop poster="images/be_social.png" alt="">
+								<source src="videos/demo_social.mp4">
+							</video>
+						</div>
 						<div class="content">
 							<h3>Be Social</h3>
 							<p>Your friends can vote on and add tracks. Higher voted songs get played sooner.</p>

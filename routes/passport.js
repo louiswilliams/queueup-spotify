@@ -1,18 +1,19 @@
 var express = require('express');
-var passport = require('passport');
 var fs = require('fs');
+var monk = require('monk');
+var passport = require('passport');
+
 var FacebookStrategy = require('passport-facebook').Strategy;
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 var SpotifyStrategy = require('passport-spotify').Strategy;
 
-var monk = require('monk');
-var db = monk('localhost:27017/queueup');
+var constant = require('../constant');
 
+var db = monk('localhost:27017/queueup');
 var router = express.Router();
 
 var envConf = JSON.parse(fs.readFileSync(__dirname + '/../env.json', {encoding: 'utf8'}));
 var facebookSecret = fs.readFileSync(__dirname + "/facebookSecret.key", {encoding: 'utf8'}).trim();
-// var googleSecret = fs.readFileSync(__dirname + "/googleSecret.key", {encoding: 'utf8'}).trim();
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../spotify.key', {encoding: 'utf8'}));
 
 
@@ -116,11 +117,11 @@ router.get('/facebook/callback',  function (req, res, next) {
   passport.authenticate('facebook', function (err, user, info) {
     if (err) {return next(err); }
     if (!user) {
-      return res.redirect('/');
+      return res.redirect(constant.ROUTE_HOME);
     }
     req.logIn(user, function(err) {
       if (err) {return next(err);}
-      var redirect = (req.session.redirect_after) ? req.session.redirect_after : '/';
+      var redirect = (req.session.redirect_after) ? req.session.redirect_after : constant.ROUTE_HOME;
       delete req.session.redirect_after;
 
       return res.redirect(redirect);
@@ -135,11 +136,11 @@ router.get('/spotify/callback', function (req, res, next) {
   passport.authenticate('spotify', function (err, user, info) {
     if (err) {return next(err); }
     if (!user) {
-      return res.redirect('/');
+      return res.redirect(constant.ROUTE_HOME);
     }
     req.logIn(user, function(err) {
       if (err) {return next(err);}
-      var redirect = (req.session.redirect_after) ? req.session.redirect_after : '/';
+      var redirect = (req.session.redirect_after) ? req.session.redirect_after : constant.ROUTE_HOME;
       delete req.session.redirect_after;
 
       return res.redirect(redirect);

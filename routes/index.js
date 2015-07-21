@@ -1,12 +1,20 @@
 var express = require('express');
+var constant = require('../constant');
 var util = require('../utils');
 var router = express.Router();
 
-// router.get('/', function (req, res) {
-//   res.sendFile('index.html');
-// });
+router.post('/betaApply', function (req, res) {
+  var email = req.body.email;
+  if (email) {
+    var betaList = req.db.get('betalist');
+    betaList.insert({email: email});
+    res.send('Thanks! You will receive an email with directions if you are accepted!');
+  } else {
+    res.status(400).send("No email given");
+  }
+});
 
-router.get('/home', function (req, res) {
+router.get(constant.ROUTE_HOME, function (req, res) {
 
   var playlists = req.db.get('playlists');
   playlists.find({}, {
@@ -30,7 +38,7 @@ router.get('/home', function (req, res) {
   });
 });
 
-router.get('/user', function (req, res) {
+router.get(constant.ROUTE_USER, function (req, res) {
   console.log(req.user);
   if (req.user) {
     var playlists = req.db.get('playlists');
@@ -44,17 +52,17 @@ router.get('/user', function (req, res) {
       res.end(err);
     });
   } else {
-    res.redirect('/auth/facebook')
+    res.redirect(constant.ROUTE_AUTH_FB);
   }
 });
 
-router.get('/user/import', function (req, res) {
+router.get(constant.ROUTE_IMPORT, function (req, res) {
   if (req.user) {
 
     util.getUserPlaylists(req.user, function(err, playlists) {
       if (err) {
         console.log(err);
-        res.redirect('/');
+        res.redirect(constant.ROUTE_HOME);
       } else {
         console.log(playlists);
         res.render('import', {
@@ -66,23 +74,23 @@ router.get('/user/import', function (req, res) {
 
 
   } else {
-    res.redirect('/');
+    res.redirect(constant.ROUTE_HOME);
   }
 });
 
-router.get('/logout', function (req, res) {
+router.get(constant.ROUTE_LOGOUT, function (req, res) {
   if (req.user) {
     req.logout();
-    res.redirect('/');
+    res.redirect(constant.ROUTE_HOME);
   }
 });
 
-router.post('/new', function (req, res) {
+router.post(constant.ROUTE_NEW_PLAYLIST, function (req, res) {
   var playlists = req.db.get('playlists');
   var name = req.body.playlist_name;
 
   if (!req.user || !name) {
-    res.redirect('/');
+    res.redirect(constant.ROUTE_HOME);
   } else {
     var key = name.replace(/[^\w]/gi,'').toLowerCase();
 
@@ -97,7 +105,7 @@ router.post('/new', function (req, res) {
       date_created: new Date().getTime(),
       last_updated: new Date().getTime()
     }).success(function (playlist) {
-      res.redirect('/playlist/' + playlist._id + "/" + key);
+      res.redirect([constant.ROUTE_PLAYLIST, playlist._id, key].join('/'));
     }).error(function (err) {
       res.json({error: err});
     });

@@ -3654,10 +3654,10 @@
 		-webkit-justify-content: center;
 		-ms-justify-content: center;
 		justify-content: center;
-		background-image: url("images/overlay.png"), url("images/queueup_triangles_1920.png");
-		background-position: top left, center center;
-		background-attachment: fixed, fixed;
-		background-size: auto, cover;
+		background-image: url("images/queueup_triangles_1920.png");
+		background-position: center center;
+		background-attachment: fixed;
+		background-size: cover;
 		height: 100vh;
 		min-height: 35em;
 	}
@@ -3913,7 +3913,7 @@
 		@media screen and (max-width: 1280px) {
 
 			#header {
-				background-image: url("images/overlay.png"), url("images/queueup_triangles_1280.png");
+				background-image: url("images/queueup_triangles_1280.png");
 			}
 
 		}
@@ -3957,7 +3957,7 @@
 		@media screen and (max-width: 736px) {
 
 			#header {
-				background-image: url("images/overlay.png"), url("images/queueup_triangles_720.png");
+				background-image: url("images/queueup_triangles_720.png");
 			}
 
 				#header h1 {

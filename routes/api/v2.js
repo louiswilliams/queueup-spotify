@@ -510,6 +510,9 @@ function apiAuthenticate (req, res, next) {
           return next();
         } else {
           console.log("Bad signature");
+          console.log("> Signature: ", signature);
+          console.log("> Hashed: ", message);
+          console.log("> Result: ", digest);
           return sendBadRequest(res, "Incorrect signature");
         }
       } else {
