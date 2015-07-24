@@ -30,43 +30,6 @@ passport.deserializeUser(function(id, done) {
     })
 });
 
-passport.use(new SpotifyStrategy({
-    clientID: spotifyConfig.clientId,
-    clientSecret: spotifyConfig.clientSecret,
-    callbackURL: spotifyConfig.redirectUri
-  }, function(accessToken, refreshToken, params, profile, done) {
-    var users = db.get('users');
-
-    var expirationDate = (params.expires_in * 1000) + new Date().getTime();
-    users.findAndModify(
-        { "spotify.id" : profile.id},
-        { $set: {
-            name: ((profile.displayName) ? profile.displayName : profile.id),
-            spotify: {
-              id: profile.id,
-              name: ((profile.displayName) ? profile.displayName : profile.id),
-              username: profile.username,
-              profileUrl: profile.profileUrl,
-              accessToken: accessToken,
-              refreshToken: refreshToken,
-              tokenExpiration: expirationDate
-            }
-          }
-        },
-        { "new": true, "upsert": true}
-    ).success(function (user) {
-      console.log(user);
-      if (user) {
-        done(null, user);
-      } else {
-        done(null, false, {message: "Incorrect login"});
-      }
-    }).error(function (err) {
-      done(err)
-    });
-
-  }
-));
 
 /* Facebook */
 
@@ -83,16 +46,9 @@ passport.use(new FacebookStrategy({
     users.findAndModify(
         { "facebook.id" : profile.id},
         { $set: {
-            name: ((profile.displayName) ? profile.displayName : profile.id),
-            facebook: {
-              id: profile.id,
-              name: profile.name,
-              displayName: ((profile.displayName) ? profile.displayName : profile.id),
-              gender: profile.gender,
-              profileUrl: profile.profileUrl,
-              accessToken: accessToken,
-              refreshToken: refreshToken
-            }
+            name: profile.displayName,
+            loginOrigin: 'passport',
+            facebook: profile._json
           }
         },
         { "new": true, "upsert": true}
@@ -127,27 +83,65 @@ router.get('/facebook/callback',  function (req, res, next) {
       return res.redirect(redirect);
     });
   })(req, res, next);
-}
-);
-
-router.get('/spotify', passport.authenticate('spotify'));
-
-router.get('/spotify/callback', function (req, res, next) {
-  passport.authenticate('spotify', function (err, user, info) {
-    if (err) {return next(err); }
-    if (!user) {
-      return res.redirect(constant.ROUTE_HOME);
-    }
-    req.logIn(user, function(err) {
-      if (err) {return next(err);}
-      var redirect = (req.session.redirect_after) ? req.session.redirect_after : constant.ROUTE_HOME;
-      delete req.session.redirect_after;
-
-      return res.redirect(redirect);
-    });
-  })(req, res, next);
-
 });
+
+
+// passport.use(new SpotifyStrategy({
+//     clientID: spotifyConfig.clientId,
+//     clientSecret: spotifyConfig.clientSecret,
+//     callbackURL: spotifyConfig.redirectUri
+//   }, function(accessToken, refreshToken, params, profile, done) {
+//     var users = db.get('users');
+
+//     var expirationDate = (params.expires_in * 1000) + new Date().getTime();
+//     users.findAndModify(
+//         { "spotify.id" : profile.id},
+//         { $set: {
+//             name: ((profile.displayName) ? profile.displayName : profile.id),
+//             spotify: {
+//               id: profile.id,
+//               name: ((profile.displayName) ? profile.displayName : profile.id),
+//               username: profile.username,
+//               profileUrl: profile.profileUrl,
+//               accessToken: accessToken,
+//               refreshToken: refreshToken,
+//               tokenExpiration: expirationDate
+//             }
+//           }
+//         },
+//         { "new": true, "upsert": true}
+//     ).success(function (user) {
+//       console.log(user);
+//       if (user) {
+//         done(null, user);
+//       } else {
+//         done(null, false, {message: "Incorrect login"});
+//       }
+//     }).error(function (err) {
+//       done(err)
+//     });
+
+//   }
+// ));
+
+// router.get('/spotify', passport.authenticate('spotify'));
+
+// router.get('/spotify/callback', function (req, res, next) {
+//   passport.authenticate('spotify', function (err, user, info) {
+//     if (err) {return next(err); }
+//     if (!user) {
+//       return res.redirect(constant.ROUTE_HOME);
+//     }
+//     req.logIn(user, function(err) {
+//       if (err) {return next(err);}
+//       var redirect = (req.session.redirect_after) ? req.session.redirect_after : constant.ROUTE_HOME;
+//       delete req.session.redirect_after;
+
+//       return res.redirect(redirect);
+//     });
+//   })(req, res, next);
+
+// });
 
 
 

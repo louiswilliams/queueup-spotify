@@ -6,7 +6,6 @@
  */
 
 
-var async = require('async');
 var basicAuth = require('basic-auth');
 var crypto = require('crypto');
 var express = require('express');
@@ -85,6 +84,7 @@ router.post('/auth/login', function (req, res) {
     /* Use the Graph API to verify the user's data  */
     G.get('/me', function (profile) {
 
+      console.log(profile);
       /* If a no error from FB*/
       if (!profile.error) {
 
@@ -114,11 +114,12 @@ router.post('/auth/login', function (req, res) {
 
             /* New user */
             console.log("new user token", client_token);
-          
+
             /* Insert record */
             Users.insert({
-              name: profile.displayName,
+              name: profile.name,
               email: profile.email,
+              loginOrigin: 'api',
               facebook: profile,
               client_token: client_token
             }).success( function (user) {
