@@ -60,4 +60,9 @@
 
 	});
 
+	$(document.body).on('appear', function (event, $affected) {
+		console.log($affected);
+		// $affected.play();
+	});
+
 })(jQuery);
