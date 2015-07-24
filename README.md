@@ -34,7 +34,7 @@ A QueueUp *Player* is requried to stream from QueueUp. This repository is for th
 
 ## Setup
 
-The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. All of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications).
+The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. Most of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications). The `encryptionSecret` is your password to encrypt refresh tokens on the server side.
 
 The `/env.json` configuration file is required with three fields, *name* (environment), *host* (current hostname, like queueup.louiswilliams.org), and  *port* (server listen port)
 
@@ -142,6 +142,16 @@ These routes do not require API authentication.
 - GET `/api/v2/playlists/:playlist_id`: Get details for a playlist, by `_id`.
     - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
  
+**Spotify Token Routes** (to obtain access tokens)
+
+- POST `/api/v2/spotify/swap`: Swap an authorization code for access tokens
+    - **Input**: `{code: String}`: Authorization code
+    - **Returns**: `{access_token: String, refresh_token: String, expires_in: Number}`: An access token and (encrypted) refresh token to be stored for later retrieval.
+- POST `/api/v2/spotify/refresh`: Exchange encrypted refresh token for an access token
+    - **Input**: `{refresh_token}`: Encrypted refreh token obtained from the swap step
+    - **Returns**: `{access_token: String, expires_in: Number}`: New access token
+
+
 ### Authenticated Routes
 
 - POST `/api/v2/playlists/new`: Create new playlist
