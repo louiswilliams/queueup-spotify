@@ -165,7 +165,8 @@ ul {
   background: rgba(25,25,25,0.9);
   height: 28px;
   padding: 12px 15px 6px 15px;
-  text-shadow: rgba(0,0,0,0.5) 1px 1px 2px
+  text-shadow: rgba(0,0,0,0.5) 1px 1px 2px;
+  margin-bottom: 2em;
 }
 
 .page_header .playlist_nav{
@@ -404,13 +405,32 @@ ul {
 
 #get_app .list_item {
   background: rgba(240,240,240,0.9);
-  box-shadow: rgba(230,230,230,0.5) 1px 2px 2px 0px;
+  position: relative;
+}
+
+#get_app .list_item .list_item_title {
+  display: block;
+  margin-top: 0.8em;
+}
+
+#get_app .list_item a {
   color: black;
-  margin: 8px 0px;
+  display: block;
+}
+
+#get_app .get_app_question {
+  position: absolute;
+  top: 0.3em;
+  right: 0.3em;
+}
+
+#app_alert {
+  display: none;
 }
 
 #playlist_listing .list_item_image{
   background: url("/images/queueup_icon_64.png");
+  background-size: cover;
 }
 
 #playlist_listing_dark {
