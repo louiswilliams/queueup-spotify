@@ -3,9 +3,6 @@ html
   head
     meta(name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no")
     title #{title} - QueueUp
-    script(src="/javascripts/jquery.js")
-    script(src="/javascripts/ga.js")
-    script(src="/javascripts/bootstrap.js")
     
     link(rel="stylesheet" href="/styles/layout.css")
     link(rel="stylesheet" href="/styles/font-awesome.css")
@@ -28,9 +25,15 @@ html
             | . 
             a.user_header(href='/logout')= "Log out" 
             
-      .alert.alert-warning.alert-dismissable
+      #app_alert.alert.alert-warning.alert-dismissable
         |Unfortunately, Spotify doesn't allow streaming
         |in web apps. Download our app on iOS or Android
         |to host a playlist!
         a.close(href="#" data-dismiss="alert" aria-label="close")="X"
+
+      script(src="/javascripts/jquery.js")
+      script(src="/javascripts/ga.js")
+      script(src="/javascripts/bootstrap.js")
+      script(src="/javascripts/layout.js")
+
       block content

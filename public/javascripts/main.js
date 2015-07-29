@@ -58,11 +58,34 @@
 					speed: 1500
 				});
 
+		/* Play video*/
+		$window.on('scroll', function () {
+			$("video").each(function (i, video) {
+				$video = $(video);
+				var videoTop = $video.offset().top;
+				var videoBottom = videoTop + $video.height();
+				var windowTop = window.pageYOffset;
+				var windowBottom = windowTop + window.innerHeight;
+				
+				/* Showing at all */
+				if (windowBottom > videoTop && videoBottom > windowTop) {
+
+					/* Showing fully */
+					if (videoTop > windowTop && windowBottom > videoBottom) {
+						if (video.paused) {
+							video.play();							
+						}
+					} else {
+						if (!video.paused) {
+							video.pause();
+						}
+					}
+				}
+
+
+			})
+		});
 	});
 
-	$(document.body).on('appear', function (event, $affected) {
-		console.log($affected);
-		// $affected.play();
-	});
 
 })(jQuery);
