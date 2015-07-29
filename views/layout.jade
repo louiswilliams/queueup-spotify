@@ -5,8 +5,11 @@ html
     title #{title} - QueueUp
     script(src="/javascripts/jquery.js")
     script(src="/javascripts/ga.js")
+    script(src="/javascripts/bootstrap.js")
+    
     link(rel="stylesheet" href="/styles/layout.css")
     link(rel="stylesheet" href="/styles/font-awesome.css")
+    //link(rel="stylesheet" href="/styles/bootstrap.css")
   body
     #wrap
       .page_header
@@ -23,7 +26,11 @@ html
             | 
             a.user_header(href='/user')= user.name
             | . 
-            a.user_header(href='/logout')= "Log out"
-       
+            a.user_header(href='/logout')= "Log out" 
+            
+      .alert.alert-warning.alert-dismissable
+        |Unfortunately, Spotify doesn't allow streaming
+        |in web apps. Download our app on iOS or Android
+        |to host a playlist!
+        a.close(href="#" data-dismiss="alert" aria-label="close")="X"
       block content
-
