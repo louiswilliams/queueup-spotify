@@ -31,7 +31,7 @@ router.get(constant.ROUTE_HOME, function (req, res) {
       user = req.user;
     }
     res.render('index', {
-      title: "Hot Playlists",
+      title: "Live Right Now",
       playlists: docs,
       user: user,
       home: true,
