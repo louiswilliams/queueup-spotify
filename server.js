@@ -89,6 +89,12 @@ io.on('connection', function(socket) {
       var client_token = data.client_token;
       var user_id = data.user_id;
 
+      try {
+        user_id = new ObjectId(user_id);
+      } catch (err) {
+        return socket.emit("auth_response", {error: err});
+      }
+
       /* Both client_token and user_id must be send together */
       if (client_token && user_id) {
         Users.findOne({

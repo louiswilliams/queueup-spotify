@@ -5,9 +5,11 @@ var router = express.Router();
 
 router.post('/betaApply', function (req, res) {
   var email = req.body.email;
-  if (email) {
+  var platform = req.body.platform;
+
+  if (email && platform) {
     var betaList = req.db.get('betalist');
-    betaList.insert({email: email});
+    betaList.insert({email: email, platform: platform});
     res.send('Thanks! You will receive an email with directions if you are accepted!');
   } else {
     res.status(400).send("No email given");

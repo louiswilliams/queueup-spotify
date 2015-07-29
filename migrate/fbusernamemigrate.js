@@ -1,6 +1,6 @@
-db.users.find({facebook: {$exists: true}, name: null}).forEach(function (elem) {
-  db.users.update(elem, {$set: {
-    name: elem.facebook.name
+db.users.find({}).forEach(function (user) {
+  db.playlists.update({admin_name: null, admin: user._id}, {$set: {
+    admin_name: user.name
   }});
-  print (elem.facebook.name);
+  print (user.name);
 });

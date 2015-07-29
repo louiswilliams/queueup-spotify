@@ -85,6 +85,11 @@ router.post('/auth/login', function (req, res) {
     G.get('/me', function (profile) {
 
       console.log(profile);
+
+      G.get('/me/friends', function (result) {
+        console.log(result);
+      });
+
       /* If a no error from FB*/
       if (!profile.error) {
 

@@ -18,12 +18,10 @@ var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../spotify.key', {e
 
 
 passport.serializeUser(function(user, done) {
-    // console.log("Serialize: ", user);
     done(null, user._id);
 });
 
 passport.deserializeUser(function(id, done) {
-    // console.log("Deserialize: ", id);
     var users = db.get('users');
     users.findOne({_id: id}, function(err, user) {
         done(err, user);
@@ -67,7 +65,9 @@ passport.use(new FacebookStrategy({
 
 /* Router */
 
-router.get('/facebook', passport.authenticate('facebook'));
+router.get('/facebook', passport.authenticate('facebook', {
+  scope: ['user_friends']
+}));
 
 router.get('/facebook/callback',  function (req, res, next) {
   passport.authenticate('facebook', function (err, user, info) {
