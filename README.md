@@ -5,7 +5,7 @@ QueueUp is a collaborative playlist streaming service. Anybody can create a play
 
 A QueueUp *Player* is requried to stream from QueueUp. This repository is for the QueueUp *Server*. Read below about *Players*.
 
-### Live site [queueup.louiswilliams.org](http://queueup.louiswilliams.org)
+### Live site [queueup.io](http://queueup.io/)
 
 
 ![Playlist](public/images/screen1small.png)
