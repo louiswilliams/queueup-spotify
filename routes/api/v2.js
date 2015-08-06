@@ -154,10 +154,10 @@ router.post('/auth/login', function (req, res) {
     /* Get the user, then verify the hash */
     Users.findAndModify({
       email: email,
-      passwod: hash
+      password: hash
     }, { $set: {
       client_token: client_token
-    }}).success(function (user) {
+    }}, { "new": true }).success(function (user) {
       if (user) {
 
         /* Logged in */
