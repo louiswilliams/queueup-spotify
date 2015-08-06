@@ -137,6 +137,8 @@ These routes do not require API authentication.
 
 - GET `/api/v2/search/tracks/:query/[:offset]`: Search for tracks with a page offset
     - **Returns**: `{tracks: [Track]}`: Array (max 10) of Spotify *Track* objects. Use the offset at multiples of 10 to get more results.
+- GET `/api/v2/search/playlists/:query`: Search for playlists
+    - **Returns**: `{playlists: [Playlist]}`: Array of top 10 matches to *Playlist* objects (by name)
 - GET `/api/v2/playlists`: Get a list of playlists
     - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
 - GET `/api/v2/playlists/:playlist_id`: Get details for a playlist, by `_id`.

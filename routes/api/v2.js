@@ -76,6 +76,8 @@ router.post('/auth/login', function (req, res) {
   var email = req.body.email;
   var password = req.body.password;
 
+  var client_token = genClientToken(req.body);
+
   /* If logging in with a Facebook AcessToken */
   if (accessToken) {
 
@@ -98,7 +100,6 @@ router.post('/auth/login', function (req, res) {
           "facebook.id": profile.id
         }).success(function (user) {
 
-          var client_token = genClientToken(req.body);
 
           if (user) {
             /* In system without a token */
@@ -229,10 +230,44 @@ router.get('/search/tracks/:query/:offset?', function (req, res) {
 
   /* Essentially wrap the Spotify search by the server to not require authentication */
   req.spotify.searchTracks(req.params.query, {limit: 10, offset: offset, market: "US"}).then(function(data) {
-    res.json({tracks: data.tracks.items});
+    res.json({tracks: data.body.tracks.items});
   }, function(err) {
     console.log("Query error: ",err);
     res.json({error: err});
+  });
+});
+
+router.get('/search/playlists/:query', function (req, res) {
+
+  /* Strip anything that isn't alphanumeric or whitespace*/
+  var query = req.params.query.replace(/[^A-Za-z0-9]+/gi, '.+?');
+
+  /* Match starts of words */
+  var regex = '\\b' + query + '.*?\\b';
+  var query_regex = { $regex: regex, $options: 'i' };
+  
+  console.log("Searching for '" + query + "'");
+
+  var playlists = [];
+
+  /* Search using the regex and return the simplified results*/
+  Playlists.find({
+    'name': query_regex 
+  }, {
+    sort: { 'last_updated': -1 },
+    fields: { 'name': 1, 'current': 1, 'admin': 1, 'admin_name': 1 }
+  }).each(function (playlist) {
+    var stream_regex = new RegExp(regex, 'gi');
+    var allmatches = [];
+    while (matches = stream_regex.exec(playlist.name)) {
+        allmatches.push(matches[0]);
+    }
+    playlist.matches = allmatches;
+    playlists.push(playlist);
+  }).success(function () {
+    res.json({playlists: playlists});
+  }).error(function (err) {
+    res.status(400).json({error: err});
   });
 });
 
@@ -271,7 +306,6 @@ router.post('/playlists/:playlist/add', function (req, res) {
       sendBadRequest(res, "No track_id sent");
     }
 });
-
 
 /** AUTHENTICATED ROUTES: All routes from now on require an authenticated user **/
 router.use('/', requireAuth);
