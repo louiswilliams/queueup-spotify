@@ -27,7 +27,11 @@ var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {enco
 var envConf = JSON.parse(fs.readFileSync(__dirname + '/env.json', {encoding: 'utf8'}));
 
 // Initialize Spotify web api
-var spotify = new SpotifyWebApi(spotifyConfig);
+var spotify = new SpotifyWebApi({
+  clientId: spotifyConfig.clientId,
+  clientSecret: spotifyConfig.clientSecret,
+  redirectUri: spotifyConfig.redirectUri
+});
 var app = express();
 
 // Initialize server and socket.io
@@ -303,10 +307,14 @@ function subscribeListen(user, socket) {
       isCurrentPlayer(function () {
         /* Update the DB */
         Playlists.findAndModify(
-          {_id: player_subscription},
-          { $set: {
-            play: playing
-          }},
+          {
+            _id: player_subscription
+          }, {
+            $set: {
+              play: playing,
+              last_updated: new Date().getTime()
+            }
+          },
           {"new": true}
         ).success(function (playlist) {
           utils.emitStateChange(io, playlist, "track_play_pause");

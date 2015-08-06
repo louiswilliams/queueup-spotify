@@ -32,6 +32,7 @@ router.param('name', function(req, res, next, id) {
   }
 });
 
+
 // Pretty mode (for player)
 // GET /playlist/[id]/[name]/pretty
 router.get('/:playlist/:name?/pretty', function(req, res) {

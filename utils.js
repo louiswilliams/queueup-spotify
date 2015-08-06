@@ -62,7 +62,10 @@ exports.skipTrack = function (playlist, callback) {
       db.get('playlists').findAndModify({
         _id: playlist._id
       }, {
-        $set: {current: first.track},
+        $set: {
+          current: first.track,
+          last_updated: new Date().getTime()
+        },
         $pull: {tracks: { _id: first._id}}
       }, {
         "new": true
@@ -121,7 +124,11 @@ exports.updateUser = function (user, update, callback) {
 exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
   /* First get the track information from Spotify */
 
-  req.spotify.getTrack(trackId).then(function(track) {
+  var apiUser = req.apiUser;
+  var user = (user) ? {_id: apiUser._id, name: apiUser.name } : null;
+
+  req.spotify.getTrack(trackId).then(function(response) {
+    var track = response.body;
 
     /* This keeps on the fields we want */
     track = exports.objCopy(track, {"name": true,"duration_ms": true, "id": true, "uri": true, "artists": true, "album.id": true, "album.images": true, "album.name": true, "album.uri": true});
@@ -161,7 +168,8 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
               tracks: {
                 _id: new ObjectID(),
                 track: track,
-                dateAdded: new Date().getTime()
+                dateAdded: new Date().getTime(),
+                addedBy: user
               }
             }
           }, {"new": true}

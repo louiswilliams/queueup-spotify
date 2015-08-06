@@ -7,7 +7,7 @@ router.get('/search/:query/:offset?', function(req, res) {
   /* Query spotify with an optional offset for pages of results */
   req.spotify.searchTracks(req.params.query, {limit: 5, offset: offset}).then(function(data) {
     var response = {};
-    var tracks = data.tracks.items;
+    var tracks = data.body.tracks.items;
     console.log("Tracks found for search \"" + req.params.query + "\": " +  tracks.length);
 
     /* Construct a smaller response object  */
