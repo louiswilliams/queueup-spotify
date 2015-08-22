@@ -88,65 +88,60 @@ router.post('/auth/login', function (req, res) {
 
       console.log(profile);
 
-      G.get('/me/friends', function (fbfriends) {
+      /* If a no error from FB*/
+      if (!profile.error) {
 
-        console.log(fbfriends.data);
-
-        /* If a no error from FB*/
-        if (!profile.error) {
-
-          /* We want to regenerate the token at every login request */
-          Users.findOne({
-            "facebook.id": profile.id
-          }).success(function (user) {
+        /* We want to regenerate the token at every login request */
+        Users.findOne({
+          "facebook.id": profile.id
+        }).success(function (user) {
 
 
-            if (user) {
-              /* In system without a token */
-              console.log("User is in db. Handing out new token");
-              Users.update({
-                _id: user._id
-              }, {
-                $set: {
-                  client_token: client_token
-                }
-              }).success(function () {
-                res.json({user_id: user._id, client_token: client_token});
-              }).error(function (err) {
-                res.json({error: err});
-              });
+          if (user) {
+            /* In system without a token */
+            console.log("User is in db. Handing out new token");
+            Users.update({
+              _id: user._id
+            }, {
+              $set: {
+                client_token: client_token
+              }
+            }).success(function () {
+              res.json({user_id: user._id, client_token: client_token});
+            }).error(function (err) {
+              res.json({error: err});
+            });
 
-            } else {
+          } else {
 
-              /* New user */
-              console.log("new user token", client_token);
+            /* New user */
+            console.log("new user token", client_token);
 
-              /* Insert record */
-              Users.insert({
-                name: profile.name,
-                email: profile.email,
-                loginOrigin: 'api',
-                facebook: profile,
-                client_token: client_token,
-                friends: fbfriends
-              }).success( function (user) {
+            /* Insert record */
+            Users.insert({
+              name: profile.name,
+              email: profile.email,
+              loginOrigin: 'api',
+              facebook: profile,
+              client_token: client_token,
+              friends: fbfriends
+            }).success( function (user) {
 
-                /* Success */
-                console.log("Created account for", user.email);
-                res.json({user_id: user._id, client_token: client_token});
+              /* Success */
+              console.log("Created account for", user.email);
+              res.json({user_id: user._id, client_token: client_token});
 
-              }).error(function (err) {
-                res.json({error: err});
-              });
-            }
+            }).error(function (err) {
+              res.json({error: err});
+            });
+          }
 
-          }).error(function (err) {
-            res.json({error: err});
-          });
-        } else {
-          res.json({error: profile.error});
-        }
-      });
+        }).error(function (err) {
+          res.json({error: err});
+        });
+      } else {
+        res.json({error: profile.error});
+      }
     });
 
   /* If logging in with email and password */
