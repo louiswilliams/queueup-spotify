@@ -477,9 +477,7 @@ router.post("/users/:user/playlists", function (req, res) {
 
 /* Show a user's Facebook friends' playlists */
 router.post("/users/:user/friends/playlists", function (req, res) {
-
-  Users.find({'friends.data': {$elemMatch : {id : req.user.facebook.id}}}).success(function (friends) {
-    
+  Users.find({'facebook.id': {$in : req.body.fbids}}).success(function (friends) {
     var qupIds = [];
     friends.forEach( function(user) {
       qupIds.push(user._id)
@@ -492,29 +490,7 @@ router.post("/users/:user/friends/playlists", function (req, res) {
     }).error(function (err) {
       res.json({error: err});
     });
-
   });
-
-
-  // var friendIds = [];
-  // req.user.friends.data.forEach( function(friend) {
-  //   friendIds.push(friend.id)
-  // });
-  // Users.find(
-  //   {"facebook.id" : {$in : friendIds}}).success(function (users) {
-  //     var qupIds = [];
-  //     users.forEach( function(user) {
-  //       qupIds.push(user._id)
-  //     });
-  //
-  //     Playlists.find({
-  //       admin: {$in : qupIds}
-  //     }, {fields: {tracks: 0}}).success(function (playlists) {
-  //       res.json({playlists: playlists});
-  //     }).error(function (err) {
-  //       res.json({error: err});
-  //     });
-  //   });
 });
 
 /* Ensure that there is an authenticated API user*/
