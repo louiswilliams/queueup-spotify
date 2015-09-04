@@ -1,7 +1,7 @@
 /**
  * API version 2
  *
- * This API implements an HMAC-SHA1 scheme for API requests that 
+ * This API implements an HMAC-SHA1 scheme for API requests that
  * require authentication. A few routes can be accessed anonymously.
  */
 
@@ -30,7 +30,7 @@ router.post('/auth/register', function (req, res) {
 
   /* Pre-generate the client_token */
   var client_token = genClientToken(req.body);
- 
+
   if (email && password && name) {
 
     /* Check if user exists already */
@@ -44,7 +44,7 @@ router.post('/auth/register', function (req, res) {
         console.log("New user", client_token);
 
         var hash = crypto.createHash('md5').update(password).digest('hex');
-    
+
         /* Create the user if it doesn't already exist */
         Users.insert({
           name: name,
@@ -88,69 +88,71 @@ router.post('/auth/login', function (req, res) {
 
       console.log(profile);
 
-      G.get('/me/friends', function (result) {
-        console.log(result);
+      G.get('/me/friends', function (fbfriends) {
+
+        console.log(fbfriends.data);
+
+        /* If a no error from FB*/
+        if (!profile.error) {
+
+          /* We want to regenerate the token at every login request */
+          Users.findOne({
+            "facebook.id": profile.id
+          }).success(function (user) {
+
+
+            if (user) {
+              /* In system without a token */
+              console.log("User is in db. Handing out new token");
+              Users.update({
+                _id: user._id
+              }, {
+                $set: {
+                  client_token: client_token
+                }
+              }).success(function () {
+                res.json({user_id: user._id, client_token: client_token});
+              }).error(function (err) {
+                res.json({error: err});
+              });
+
+            } else {
+
+              /* New user */
+              console.log("new user token", client_token);
+
+              /* Insert record */
+              Users.insert({
+                name: profile.name,
+                email: profile.email,
+                loginOrigin: 'api',
+                facebook: profile,
+                client_token: client_token,
+                friends: fbfriends
+              }).success( function (user) {
+
+                /* Success */
+                console.log("Created account for", user.email);
+                res.json({user_id: user._id, client_token: client_token});
+
+              }).error(function (err) {
+                res.json({error: err});
+              });
+            }
+
+          }).error(function (err) {
+            res.json({error: err});
+          });
+        } else {
+          res.json({error: profile.error});
+        }
       });
-
-      /* If a no error from FB*/
-      if (!profile.error) {
-
-        /* We want to regenerate the token at every login request */
-        Users.findOne({
-          "facebook.id": profile.id
-        }).success(function (user) {
-
-
-          if (user) {
-            /* In system without a token */
-            console.log("User is in db. Handing out new token");
-            Users.update({
-              _id: user._id
-            }, {
-              $set: {
-                client_token: client_token
-              }
-            }).success(function () {
-              res.json({user_id: user._id, client_token: client_token});
-            }).error(function (err) {
-              res.json({error: err});
-            });
-
-          } else {
-
-            /* New user */
-            console.log("new user token", client_token);
-
-            /* Insert record */
-            Users.insert({
-              name: profile.name,
-              email: profile.email,
-              loginOrigin: 'api',
-              facebook: profile,
-              client_token: client_token
-            }).success( function (user) {
-
-              /* Success */
-              console.log("Created account for", user.email);
-              res.json({user_id: user._id, client_token: client_token});
-
-            }).error(function (err) {
-              res.json({error: err});
-            });
-          }
-
-        }).error(function (err) {
-          res.json({error: err});
-        });
-      } else {
-        res.json({error: profile.error});
-      }
     });
 
   /* If logging in with email and password */
   } else if (email && password) {
     var hash = crypto.createHash('md5').update(password).digest('hex');
-    
+
     /* Get the user, then verify the hash */
     Users.findAndModify({
       email: email,
@@ -199,7 +201,7 @@ router.param('playlist', function(req, res, next, id) {
       sendBadRequest(res, "Couldn't find playlist " + id);
     }
 
-  }); 
+  });
 });
 
 /* User_id parameter */
@@ -215,7 +217,7 @@ router.param('user', function(req, res, next, id) {
       sendBadRequest(res, "Couldn't find user " + id);
     }
 
-  }); 
+  });
 });
 
 /* Routes beyond here should pass through the authentication middleware */
@@ -245,14 +247,14 @@ router.get('/search/playlists/:query', function (req, res) {
   /* Match starts of words */
   var regex = '\\b' + query + '.*?\\b';
   var query_regex = { $regex: regex, $options: 'i' };
-  
+
   console.log("Searching for '" + query + "'");
 
   var playlists = [];
 
   /* Search using the regex and return the simplified results*/
   Playlists.find({
-    'name': query_regex 
+    'name': query_regex
   }, {
     sort: { 'last_updated': -1 },
     fields: { 'name': 1, 'current': 1, 'admin': 1, 'admin_name': 1 }
@@ -449,7 +451,7 @@ router.get("/users/:user", function (req, res) {
   };
 
   if (req.user.facebook) {
-    user.facebook = { 
+    user.facebook = {
       id: req.user.facebook.id
     }
   }
@@ -473,6 +475,47 @@ router.get("/users/:user/playlists", function (req, res) {
   });
 });
 
+/* Show a user's Facebook friends' playlists */
+router.post("/users/:user/friends/playlists", function (req, res) {
+
+  Users.find({'friends.data': {$elemMatch : {id : req.user.facebook.id}}}).success(function (friends) {
+    
+    var qupIds = [];
+    friends.forEach( function(user) {
+      qupIds.push(user._id)
+    });
+
+    Playlists.find({
+      admin: {$in : qupIds}
+    }, {fields: {tracks: 0}}).success(function (playlists) {
+      res.json({playlists: playlists});
+    }).error(function (err) {
+      res.json({error: err});
+    });
+
+  });
+
+
+  // var friendIds = [];
+  // req.user.friends.data.forEach( function(friend) {
+  //   friendIds.push(friend.id)
+  // });
+  // Users.find(
+  //   {"facebook.id" : {$in : friendIds}}).success(function (users) {
+  //     var qupIds = [];
+  //     users.forEach( function(user) {
+  //       qupIds.push(user._id)
+  //     });
+  //
+  //     Playlists.find({
+  //       admin: {$in : qupIds}
+  //     }, {fields: {tracks: 0}}).success(function (playlists) {
+  //       res.json({playlists: playlists});
+  //     }).error(function (err) {
+  //       res.json({error: err});
+  //     });
+  //   });
+});
 
 /* Ensure that there is an authenticated API user*/
 function requireAuth (req, res, next) {
@@ -494,10 +537,10 @@ function requireAuth (req, res, next) {
  */
 
 /* We don't want to accept Date headers that are more than 5 mins old */
-var MAX_DIFF = 5 * 60 * 1000; 
+var MAX_DIFF = 5 * 60 * 1000;
 
 function apiAuthenticate (req, res, next) {
-  
+
   var auth = basicAuth(req);
 
   if (!auth) {
@@ -539,7 +582,7 @@ function apiAuthenticate (req, res, next) {
 
         /* Note that we truncate the time to the second */
         var message = [req.method, req.hostname, req.originalUrl, reqDate.getTime() / 1000].join('+');
-        
+
         // console.log("Hashing: '" + message + "'");
         /* Compute the HMAC digest of the URL */
         var digest = crypto.createHmac('sha1', user.client_token).update(message).digest('hex');
