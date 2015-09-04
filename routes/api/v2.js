@@ -442,7 +442,7 @@ router.post('/playlists/:playlist/import', function (req, res) {
 /** User Routes **/
 
 /* Describe a user */
-router.post("/users/:user", function (req, res) {
+router.get("/users/:user", function (req, res) {
   var user = {
     _id: req.user._id,
     name: req.user.name,
@@ -462,7 +462,7 @@ router.post("/users/:user", function (req, res) {
 });
 
 /* Show a user's playlists */
-router.post("/users/:user/playlists", function (req, res) {
+router.get("/users/:user/playlists", function (req, res) {
   Playlists.find({
     admin: req.user._id
   }, {fields: {tracks: 0}}).success(function (playlists) {
