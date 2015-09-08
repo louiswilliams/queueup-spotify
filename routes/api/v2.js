@@ -21,12 +21,33 @@ var db = monk('localhost:27017/queueup');
 var Playlists = db.get('playlists');
 var Users = db.get('users');
 
+/* Initialize an anonymous user with some device information */
+router.post('/auth/init', function (req, res) {
+  var device = req.body.device;
+
+  /* Pre-generate the client_token */
+  var client_token = genClientToken(req.body);
+
+  Users.insert({
+    device: device,
+    client_token: client_token
+  }).success(function (user) {
+    res.json({
+      user_id: user._id,
+      client_token: client_token}
+    );
+  }).error(function (err) {
+    sendBadRequest(res, err);
+  });
+});
 
 /* Register an email client */
 router.post('/auth/register', function (req, res) {
   var email = req.body.email;
   var name = req.body.name;
   var password = req.body.password;
+  var user_id = req.body.user_id;
+  var sent_client_token = req.body.client_token;
 
   /* Pre-generate the client_token */
   var client_token = genClientToken(req.body);
@@ -45,37 +66,49 @@ router.post('/auth/register', function (req, res) {
 
         var hash = crypto.createHash('md5').update(password).digest('hex');
 
-        /* Create the user if it doesn't already exist */
-        Users.insert({
-          name: name,
-          email: email,
-          password: hash,
-          client_token: client_token
-        }).success( function (user) {
+        /* If the user_id has previously been initialized */
+        if (user_id) {
 
-          /* Success*/
-          res.json({user_id: user._id, client_token: client_token});
+          /* Create the user if it doesn't already exist */
+          Users.findAndModify({
+            _id: user_id,
+            client_token: sent_client_token
+          }, {$set: {
+            name: name,
+            email: email,
+            password: hash,
+            client_token: client_token
+          }}, {upsert: true, new: true}).success( function (user) {
 
-        }).error(function (err) {
-          console.log(err);
-          res.json({error: err});
-        });
+            /* Success*/
+            res.json({user_id: user._id, client_token: client_token});
+
+          }).error(function (err) {
+            console.log(err);
+            sendBadRequest(res, err);
+          });          
+        } else {
+          sendBadRequest(res, "user_id not sent. Needed to register user")
+        }
       }
     }).error(function (err) {
       console.log(err);
       res.json({error: err});
     });
   } else {
-    sendBadRequest(res, "Name or Email or pass not sent");
+    sendBadRequest(res, "Name, email, or password not sent");
   }
 });
 
 /* Login a user. Returns the user_id and a new token */
 router.post('/auth/login', function (req, res) {
   var accessToken = req.body.facebook_access_token;
+  var user_id = req.body.user_id;
+  var sent_client_token = req.body.client_token;
   var email = req.body.email;
   var password = req.body.password;
 
+  /* Generate a new client token */
   var client_token = genClientToken(req.body);
 
   /* If logging in with a Facebook AcessToken */
@@ -121,23 +154,31 @@ router.post('/auth/login', function (req, res) {
               /* New user */
               console.log("new user token", client_token);
 
-              /* Insert record */
-              Users.insert({
-                name: profile.name,
-                email: profile.email,
-                loginOrigin: 'api',
-                facebook: profile,
-                client_token: client_token,
-                friends: fbfriends
-              }).success( function (user) {
+              /* We need a device ID to register for the first time */
+              if (user_id) {
+                /* Insert record */
+                Users.findAndModify({
+                  _id: user_id,
+                  client_token: sent_client_token
+                }, {$set: {
+                  name: profile.name,
+                  email: profile.email,
+                  loginOrigin: 'api',
+                  facebook: profile,
+                  client_token: client_token,
+                  friends: fbfriends
+                }}, {upsert: true, new: true}).success( function (user) {
 
-                /* Success */
-                console.log("Created account for", user.email);
-                res.json({user_id: user._id, client_token: client_token});
+                  /* Success */
+                  console.log("Created account for", user.email);
+                  res.json({user_id: user._id, client_token: client_token});
 
-              }).error(function (err) {
-                res.json({error: err});
-              });
+                }).error(function (err) {
+                  res.json({error: err});
+                });
+              } else {
+                sendBadRequest(res, "user_id not sent. Needed to create account")
+              }
             }
 
           }).error(function (err) {
@@ -170,8 +211,10 @@ router.post('/auth/login', function (req, res) {
     }).error( function (err) {
       sendBadRequest(res, err);
     });
+
+  /* Logging in anonymously with a unique device identifier */
   } else {
-    sendBadRequest(res, "Email/pass OR access token not sent");
+    sendBadRequest(res, "Neither email/pass or access token sent");
   }
 });
 

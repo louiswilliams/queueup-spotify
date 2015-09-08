@@ -82,17 +82,26 @@ Authenticated routes require the HMAC scheme described below. Unauthenticated ro
 
 ### Authentication
 
-#### Step 1: Obtaining a `user_id` and `client_token` secret.
+#### Step 0: Requesting anonymous user credentials
+
+Beacause of the the desire to have anonymous users, call this route to obtain a `user_id` and `client_token`, which must be used in step 1.
+
+- POST `/api/v2/auth/init`: Register an anonymous account
+    - **Input**: `{device: {id: String}}`: Register with a unique device identifier
+    - **Returns**: `{user_id: String, client_token: String}`: **Save these for later requests**
+
+#### Step 1: Registering for the first time
 
 *Note: a request to both of these routes REASSIGNS a `client_token` and invalidates the current one, if it exists.*
 
 - POST `/api/v2/auth/register`: Register an account for the first time (without Facebook)
-    - **Input**: `{email: String, password: String, name: String}`: Register with an name/email/password
+    - **Input**: `{user_id: String, client_token: String, email: String, password: String, name: String}`: Register with an name/email/password
     - **Returns**: `{user_id: String, client_token: String}`: **Save these for API requests**
 - POST `/api/v2/auth/login`: Log in to receive a `client_token` for API requests
     - **Input**: Choose ONE:
         - `{email: String, password: String}`: Log in with an existing email/password
-        - `{facebook_access_token: String}`: Log in with a valid FB access token
+        - `{user_id: String, client_token: String, facebook_access_token: String}`: Log in with a valid FB access token.
+          - *Note: a user_id/client_token are only required for the very first login attempt*
     - **Returns**: `{user_id: String, client_token: String}`: **Save these for API requests**
 
 
