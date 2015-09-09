@@ -121,73 +121,60 @@ router.post('/auth/login', function (req, res) {
 
       console.log(profile);
 
-      G.get('/me/friends', function (fbfriends) {
+      /* If a no error from FB*/
+      if (!profile.error) {
 
-        console.log(fbfriends.data);
-
-        /* If a no error from FB*/
-        if (!profile.error) {
-
-          /* We want to regenerate the token at every login request */
-          Users.findOne({
-            "facebook.id": profile.id
-          }).success(function (user) {
+        /* We want to regenerate the token at every login request */
+        Users.findOne({
+          "facebook.id": profile.id
+        }).success(function (user) {
 
 
-            if (user) {
-              /* In system without a token */
-              console.log("User is in db. Handing out new token");
-              Users.update({
-                _id: user._id
-              }, {
-                $set: {
-                  client_token: client_token
-                }
-              }).success(function () {
-                res.json({user_id: user._id, client_token: client_token});
-              }).error(function (err) {
-                res.json({error: err});
-              });
-
-            } else {
-
-              /* New user */
-              console.log("new user token", client_token);
-
-              /* We need a device ID to register for the first time */
-              if (user_id) {
-                /* Insert record */
-                Users.findAndModify({
-                  _id: user_id,
-                  client_token: sent_client_token
-                }, {$set: {
-                  name: profile.name,
-                  email: profile.email,
-                  loginOrigin: 'api',
-                  facebook: profile,
-                  client_token: client_token,
-                  friends: fbfriends
-                }}, {upsert: true, new: true}).success( function (user) {
-
-                  /* Success */
-                  console.log("Created account for", user.email);
-                  res.json({user_id: user._id, client_token: client_token});
-
-                }).error(function (err) {
-                  res.json({error: err});
-                });
-              } else {
-                sendBadRequest(res, "user_id not sent. Needed to create account")
+          if (user) {
+            /* In system without a token */
+            console.log("User is in db. Handing out new token");
+            Users.update({
+              _id: user._id
+            }, {
+              $set: {
+                client_token: client_token
               }
-            }
+            }).success(function () {
+              res.json({user_id: user._id, client_token: client_token});
+            }).error(function (err) {
+              res.json({error: err});
+            });
 
-          }).error(function (err) {
-            res.json({error: err});
-          });
-        } else {
-          res.json({error: profile.error});
-        }
-      });
+          } else {
+
+            /* New user */
+            console.log("new user token", client_token);
+
+            /* Insert record */
+            Users.insert({
+              name: profile.name,
+              email: profile.email,
+              loginOrigin: 'api',
+              facebook: profile,
+              client_token: client_token,
+              friends: fbfriends
+            }).success( function (user) {
+
+              /* Success */
+              console.log("Created account for", user.email);
+              res.json({user_id: user._id, client_token: client_token});
+
+            }).error(function (err) {
+              res.json({error: err});
+            });
+          }
+
+        }).error(function (err) {
+          res.json({error: err});
+        });
+      } else {
+        res.json({error: profile.error});
+      }
     });
 
   /* If logging in with email and password */
@@ -520,9 +507,7 @@ router.get("/users/:user/playlists", function (req, res) {
 
 /* Show a user's Facebook friends' playlists */
 router.post("/users/:user/friends/playlists", function (req, res) {
-
-  Users.find({'friends.data': {$elemMatch : {id : req.user.facebook.id}}}).success(function (friends) {
-    
+  Users.find({'facebook.id': {$in : req.body.fbids}}).success(function (friends) {
     var qupIds = [];
     friends.forEach( function(user) {
       qupIds.push(user._id)
@@ -535,29 +520,7 @@ router.post("/users/:user/friends/playlists", function (req, res) {
     }).error(function (err) {
       res.json({error: err});
     });
-
   });
-
-
-  // var friendIds = [];
-  // req.user.friends.data.forEach( function(friend) {
-  //   friendIds.push(friend.id)
-  // });
-  // Users.find(
-  //   {"facebook.id" : {$in : friendIds}}).success(function (users) {
-  //     var qupIds = [];
-  //     users.forEach( function(user) {
-  //       qupIds.push(user._id)
-  //     });
-  //
-  //     Playlists.find({
-  //       admin: {$in : qupIds}
-  //     }, {fields: {tracks: 0}}).success(function (playlists) {
-  //       res.json({playlists: playlists});
-  //     }).error(function (err) {
-  //       res.json({error: err});
-  //     });
-  //   });
 });
 
 /* Ensure that there is an authenticated API user*/
