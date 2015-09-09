@@ -93,7 +93,7 @@ router.post('/auth/register', function (req, res) {
       }
     }).error(function (err) {
       console.log(err);
-      res.json({error: err});
+      sendBadRequest(res, err);
     });
   } else {
     sendBadRequest(res, "Name, email, or password not sent");
@@ -142,7 +142,7 @@ router.post('/auth/login', function (req, res) {
             }).success(function () {
               res.json({user_id: user._id, client_token: client_token});
             }).error(function (err) {
-              res.json({error: err});
+              sendBadRequest(res, err);
             });
 
           } else {
@@ -165,12 +165,12 @@ router.post('/auth/login', function (req, res) {
               res.json({user_id: user._id, client_token: client_token});
 
             }).error(function (err) {
-              res.json({error: err});
+              sendBadRequest(res, err);
             });
           }
 
         }).error(function (err) {
-          res.json({error: err});
+          sendBadRequest(res, err);
         });
       } else {
         res.json({error: profile.error});
@@ -265,7 +265,7 @@ router.get('/search/tracks/:query/:offset?', function (req, res) {
     res.json({tracks: data.body.tracks.items});
   }, function(err) {
     console.log("Query error: ",err);
-    res.json({error: err});
+    sendBadRequest(res, err);
   });
 });
 
@@ -310,7 +310,7 @@ router.get('/playlists', function (req, res) {
   playlists.find({},{sort: {"last_updated": -1}, fields: {tracks: 0}}).success(function (documents) {
     res.json({playlists: documents});
   }).error(function (err) {
-    res.json({error: err});
+    sendBadRequest(res, err);
   });
 
 });
@@ -327,7 +327,7 @@ router.post('/playlists/:playlist/add', function (req, res) {
     var track_id = req.body.track_id;
       utils.addTrackToPlaylist(req, track_id, req.playlist, function(err) {
         if (err) {
-          res.json({error: err});
+          sendBadRequest(res, err);
         } else {
           res.json({message: "Success"});
         }
@@ -366,7 +366,7 @@ router.post('/playlists/new', function (req, res) {
       res.json({playlist: playlist});
     }).error(function (err) {
 
-      res.json({error: err});
+      sendBadRequest(res, err);
     });
 
 
@@ -402,7 +402,7 @@ router.post('/playlists/:playlist/rename', function (req, res) {
         res.json({playlist: playlist});
       }).error(function (err) {
 
-        res.json({error: err});
+        sendBadRequest(res, err);
       });
 
     } else {
@@ -433,7 +433,7 @@ router.post('/playlists/:playlist/delete', function (req, res) {
       }
     }).error(function (err) {
 
-      res.json({error: err});
+      sendBadRequest(res, err);
     });
 
   } else {
@@ -501,7 +501,7 @@ router.get("/users/:user/playlists", function (req, res) {
 
     res.json({playlists: playlists});
   }).error(function (err) {
-    res.json({error: err});
+    sendBadRequest(res, err);
   });
 });
 
@@ -518,7 +518,7 @@ router.post("/users/:user/friends/playlists", function (req, res) {
     }, {fields: {tracks: 0}}).success(function (playlists) {
       res.json({playlists: playlists});
     }).error(function (err) {
-      res.json({error: err});
+      sendBadRequest(res, err);
     });
   });
 });
