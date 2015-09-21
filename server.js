@@ -69,6 +69,21 @@ app.use('/spotify', spotifyRouter);
 app.use('/auth', passportRouter);
 app.use('/api', apiRouter);
 
+/* 404 Handler */
+app.use(function (req, res, next) {
+  res.status(404);
+
+  if (req.accepts('html')) {
+    return res.render('404');
+  }
+
+  if (req.accepts('json')) {
+    return res.json({error: "Page not found"});
+  }
+
+  return res.type('txt').send("Not found");
+});
+
 // Start server
 server.listen(envConf.port, function() {
   console.log("Server (%s) started on port %d", envConf.name, server.address().port);

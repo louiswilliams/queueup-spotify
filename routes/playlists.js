@@ -9,7 +9,14 @@ var router = express.Router();
 // playlist param
 router.param('playlist', function(req, res, next, id) {
   var playlists = req.db.get('playlists');
-  playlists.findOne({_id: id},{}, function(err, playlist) {
+
+  try {
+    var pid = ObjectID(id);
+  } catch (err) {
+       return res.render('404');
+  }
+
+  playlists.findOne({_id: pid},{}, function(err, playlist) {
     if (err){
        return next(new Error("Find playlist Error: " + err));
     }
@@ -19,7 +26,7 @@ router.param('playlist', function(req, res, next, id) {
         return next();
       });
     } else {
-       return next(new Error("Cound't find playlist " + id));
+       return res.redirect('/');
     }
   }); 
 });
