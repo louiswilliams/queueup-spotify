@@ -234,6 +234,11 @@ ul {
   box-shadow: rgba(0,0,0,0.5) 1px 1px 3px 0px;
 }
 
+#current_info {
+  float: right;
+  margin-top: 10px;
+  margin-right: 10px;
+}
 
 #current_title {
   background: rgba(25,25,25,0.9);

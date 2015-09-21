@@ -14,12 +14,14 @@ block content
   script(src="/javascripts/touch-punch.js")
   script(src="/javascripts/client.js")
 
+  #alert
   #current(style="background-image: url('" + album_art_url + "')")
       
       // if !pretty && is_admin
       //   #volumewrap
       //     input#volume(class="dial", type="text", value=playlist.volume)
 
+      a#current_info.get_app_question.fa.fa-question-circle(href="#")
       #current_title
 
           #current_name= current_name

@@ -3,9 +3,8 @@ $(document).ready(function() {
 
     $alert_close = $("<a class='close' href='#' data-dismiss='alert' aria-label='close'>X</a>");
 
-    var message = "Unfortunately, Spotify doesn't allow streaming " +
-        "in web apps. Download our app on iOS or Android " + 
-        "to host a playlist! ";
+    var message = "Download our app on iOS or Android " + 
+        " to host a playlist using your Spotify account! ";
 
     $alert.html(message);
     $alert.append($alert_close);
@@ -13,7 +12,7 @@ $(document).ready(function() {
  
     $(".get_app_question").click(function (e) {
         e.preventDefault();
-        $('#playlist_listing').before($alert); 
+        $('#alert').append($alert); 
         $alert.slideDown(200);
     })
 });
