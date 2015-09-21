@@ -298,6 +298,8 @@ exports.emitStateChange = function (io, playlist, proj, trigger) {
     trigger = proj;
   }
 
+  console.log("emitting state change: ", playlist);
+
   /* Transform with the current state (playlist field is required) */
   transform.playlist(playlist, function (playlist) {
 

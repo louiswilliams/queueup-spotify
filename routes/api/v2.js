@@ -271,7 +271,10 @@ router.get('/search/tracks/:query/:offset?', function (req, res) {
 
 router.get('/search/playlists/:query', function (req, res) {
 
-  /* Strip anything that isn't alphanumeric or whitespace*/
+  /*  Strip anything that isn't alphanumeric or whitespace
+      The idea here is to replace those characters with a ".",
+      which will match any character reluctantly
+  */
   var query = req.params.query.replace(/[^A-Za-z0-9]+/gi, '.+?');
 
   /* Match starts of words */
@@ -284,7 +287,11 @@ router.get('/search/playlists/:query', function (req, res) {
 
   /* Search using the regex and return the simplified results*/
   Playlists.find({
-    'name': query_regex
+    $or: [
+        {'name': query_regex},
+        {'admin_name': query_regex}
+    ]
+    
   }, {
     sort: { 'last_updated': -1 },
     fields: { 'name': 1, 'current': 1, 'admin': 1, 'admin_name': 1 }
