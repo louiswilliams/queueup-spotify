@@ -5,7 +5,7 @@
  * require authentication. A few routes can be accessed anonymously.
  */
 
-
+var async = require('async');
 var basicAuth = require('basic-auth');
 var crypto = require('crypto');
 var express = require('express');
@@ -506,20 +506,36 @@ router.get("/users/:user/playlists", function (req, res) {
 });
 
 /* Show a user's Facebook friends' playlists */
-router.post("/users/:user/friends/playlists", function (req, res) {
-  Users.find({'facebook.id': {$in : req.body.fbids}}).success(function (friends) {
-    var qupIds = [];
-    friends.forEach( function(user) {
-      qupIds.push(user._id)
+router.post("/users/friends/playlists", function (req, res) {
+  var friendsPlaylists = [];
+
+  /* Get the QueueUp ids from the FB ids    */
+  Users.find({
+    'facebook.id': {$in : req.body.fb_ids}
+  }).success(function (friends) {
+
+    /* Sequentially find the user's playlists and add it to a list to send back*/
+    async.eachSeries(friends, function (friend, callback) {
+        console.log("Friend: ", friend.name);
+        Playlists.find({
+          admin: friend._id
+        }, {fields: {tracks: 0}}).success(function (playlists) {
+            friendsPlaylists = friendsPlaylists.concat(playlists);
+            callback();
+        }).error(function (err) {
+            callback(err);
+        });
+    }, function (err) {
+        if (err) {
+            sendBadRequest(res, err);
+        } else {
+            console.log("Friend's playlists: ", friendsPlaylists.length);
+            res.json({playlists: friendsPlaylists});
+        }
     });
 
-    Playlists.find({
-      admin: {$in : qupIds}
-    }, {fields: {tracks: 0}}).success(function (playlists) {
-      res.json({playlists: playlists});
-    }).error(function (err) {
-      sendBadRequest(res, err);
-    });
+  }).error(function (err) {
+    sendBadRequest(res, err);
   });
 });
 
