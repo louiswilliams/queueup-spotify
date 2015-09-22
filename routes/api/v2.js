@@ -28,10 +28,15 @@ router.post('/auth/init', function (req, res) {
   /* Pre-generate the client_token */
   var client_token = genClientToken(req.body);
 
-  Users.insert({
+  Users.findAndModify({
     device: device,
-    client_token: client_token
-  }).success(function (user) {
+    facebook: { $exists: false },
+    email: { $exists: false}
+  }, {
+    $set: {      
+      client_token: client_token
+    }
+  }, {upsert: true}).success(function (user) {
     res.json({
       user_id: user._id,
       client_token: client_token}
@@ -628,9 +633,9 @@ function apiAuthenticate (req, res, next) {
           return sendBadRequest(res, "Incorrect signature");
         }
       } else {
-        console.log("Client not found");
+        console.log("Client not found: ", user_id);
         /* Don't proceed to other middleware if client token isn't verified */
-        sendForbidden(res, "Client not found");
+        sendForbidden(res, "Client not found: ", user_id);
       }
     }).error(function (err) {
       console.log(err);
