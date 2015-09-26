@@ -258,9 +258,6 @@ router.param('user', function(req, res, next, id) {
 /* Routes beyond here should pass through the authentication middleware */
 router.use('/', apiAuthenticate);
 
-
-/** UNAUTHENTICATED ROUTES: Do not require an authenticated user **/
-
 /* Search spotify with a page offset*/
 router.get('/search/tracks/:query/:offset?', function (req, res) {
   var offset = (req.params.offset) ? req.params.offset : 0;

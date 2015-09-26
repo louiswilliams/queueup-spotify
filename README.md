@@ -19,12 +19,13 @@ A QueueUp *Player* is requried to stream from QueueUp. This repository is for th
 * [Players](#players)
     * [Implementation](#implementation)
 * [REST API](#rest-api)
-    * [Authenticated/Unauthenticated Routes](#authenticatedunauthenticated-routes)
+    * [Authenticated Routes](#authenticated-routes)
     * [Authentication](#authentication)
         * [Step 1](#step-1-obtaining-a-user_id-and-client_token-secret)
         * [Step 2](#step-2-authenticating)
-    * [Unauthenticated Routes](#unauthenticated-routes)
-    * [Authenticated Routes](#authenticated-routes)
+    * [Search Routes](#search-routes)
+    * [Playlist Routes](#playlist-routes)
+    * [User Routes](#user-routes)
 * [Socket.io API](#socketio-api)
     * [Step 1](#step-1-authenticate-to-gain-access)
     * [Step 2](#step-2-register-as-a-client-or-player)
@@ -75,9 +76,9 @@ For requests that do not require event-based socketed connections, like searchin
 
 *Note: All responses send 200 codes on success, 400 on client errors, 403 on unauthorized access, and 500 on server errors. 4xx errors contain an `error` attribute, with an error description, `error.message`*
 
-### Authenticated/Unauthenticated Routes
+### Authenticated Routes
 
-Authenticated routes require the HMAC scheme described below. Unauthenticated routes do not need to send any additional headers. The `Authorization` header implies the desire to authenticate, and its absense indicates the desire to proceed unauthenticated, if possible. An attempt to access an authenticated route without the `Authorization` header or if the user isn't found return 403 errors, all other bad requests return 400 (like an invalid hash). 
+Authenticated routes require the HMAC scheme described below. An attempt to access an authenticated route without the `Authorization` header or if the user isn't found return 403 errors, all other bad requests return 400 (like an invalid hash). 
 
 
 ### Authentication
@@ -141,18 +142,6 @@ The appropriate headers are then:
 
 *Note: Dates must be withing 5 minutes of server time to prevent replay*
 
-### Unauthenticated Routes
-These routes do not require API authentication.
-
-- GET `/api/v2/search/tracks/:query/[:offset]`: Search for tracks with a page offset
-    - **Returns**: `{tracks: [Track]}`: Array (max 10) of Spotify *Track* objects. Use the offset at multiples of 10 to get more results.
-- GET `/api/v2/search/playlists/:query`: Search for playlists
-    - **Returns**: `{playlists: [Playlist]}`: Array of top 10 matches to *Playlist* objects (by name)
-- GET `/api/v2/playlists`: Get a list of playlists
-    - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
-- GET `/api/v2/playlists/:playlist_id`: Get details for a playlist, by `_id`.
-    - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
- 
 **Spotify Token Routes** (to obtain access tokens)
 
 - POST `/api/v2/spotify/swap`: Swap an authorization code for access tokens
@@ -163,8 +152,19 @@ These routes do not require API authentication.
     - **Returns**: `{access_token: String, expires_in: Number}`: New access token
 
 
-### Authenticated Routes
+### Search Routes
 
+- GET `/api/v2/search/tracks/:query/[:offset]`: Search for tracks with a page offset
+    - **Returns**: `{tracks: [Track]}`: Array (max 10) of Spotify *Track* objects. Use the offset at multiples of 10 to get more results.
+- GET `/api/v2/search/playlists/:query`: Search for playlists
+    - **Returns**: `{playlists: [Playlist]}`: Array of top 10 matches to *Playlist* objects (by name)
+
+### Playlist Routes
+
+- GET `/api/v2/playlists`: Get a list of playlists
+    - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
+- GET `/api/v2/playlists/:playlist_id`: Get details for a playlist, by `_id`.
+    - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
 - POST `/api/v2/playlists/new`: Create new playlist
     - **Input**: `{playlist: {name: String}}`: New playlist object (with name)
     - **Returns**: `{playlist: Playlist}`: New *Playlist* object.
@@ -174,11 +174,15 @@ These routes do not require API authentication.
 - POST `/api/v2/playlists/:playlist_id/vote`: Vote on a track
     - **Input**: `{track_id: String, vote: Boolean}`: True to vote, false to unvote
     - **Returns**: `{playlist: Playlist}`: An updated *Playlist* object.   
-- POST `/api/v2/users/:user_id`: Get User information
-    - **Input**: Nothing
+
+### User Routes
+
+- GET `/api/v2/users/:user_id`: Get User information
     - **Returns**: `user: User`: A *User* object.
-- POST `/api/v2/users/:user_id/playlists:`: Get User playlists
-    - **Input**: Nothing
+- GET `/api/v2/users/:user_id/playlists:`: Get User playlists
+    - **Returns**: `playlists: [Playlist]`: Arraw of *Playlist* Objects (without tracks).
+- POST `/api/v2/users/friends/playlists:`: Get a list of a user's friends' playlists
+    - **Input**: `{fbids: [String]}`: An array of Facebok Ids
     - **Returns**: `playlists: [Playlist]`: Arraw of *Playlist* Objects (without tracks).
 
 Socket.io API
