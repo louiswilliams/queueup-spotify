@@ -17,13 +17,17 @@
 		<!--[if lte IE 8]><link rel="stylesheet" href="styles/ie8.css" /><![endif]-->
 		<!--[if lte IE 9]><link rel="stylesheet" href="styles/ie9.css" /><![endif]-->
 	</head>
-	<body id="top">
+	<body id="top" itemscope itemtype="http://schema.org/Organization">
+
 
 		<!-- Header -->
 			<header id="header">
 				<div class="content">
-					<h1><a class="brand" href="#"><img src="images/queueup_logo.png"></a></h1>
-					<p>Let your party decide what to play</p>
+					<h1>
+						<span itemprop="name" style="display:none">QueueUp</span>
+						<a class="brand" href="/" itemprop="url" ><img alt="QueueUp" src="images/queueup_logo.png"></a>
+					</h1>
+					<p itemprop="description">Let your party decide what to play</p>
 					<ul class="actions">
 						<li><a href="android.html" class="button special icon fa-android">Android Player</a></li>
 						<li><a href="ios.html" class="button special icon fa-apple">iOS Player</a></li>
@@ -129,7 +133,7 @@
 				<ul class="icons">
 					<li><a href="https://github.com/louiswilliams/queueup-spotify" class="icon fa-github"><span class="label">Github</span></a></li>
 				</ul>
-				<p class="copyright">&copy; QueueUp 2015. Louis Williams. Credits: <a href="http://html5up.net">HTML5 UP</a></p>
+				<p class="copyright">&copy; QueueUp 2015. <span itemprop="founder">Louis Williams</span>. Credits: <a href="http://html5up.net">HTML5 UP</a></p>
 			</footer>
 
 		<!-- Scripts -->
