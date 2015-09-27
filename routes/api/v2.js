@@ -475,6 +475,40 @@ router.post('/playlists/:playlist/vote', function (req, res) {
 
 });
 
+/* Delete a track from a playlist */
+router.post('/playlists/:playlist/delete/track', function(req, res) {
+  var playlists = req.db.get('playlists');
+
+  var trackId = req.body.track_id;
+  if (req.apiUser._id.equals(req.playlist.admin)) {
+
+    Playlists.findAndModify({
+      _id: req.playlist._id
+    }, {
+      $pull: {
+        tracks: {
+          _id: new ObjectID(trackId)
+        }
+      }
+    }, {
+      "new": true
+    }).success(function (playlist) {
+      console.log("Deleted track", trackId, " from ", playlist._id);
+
+      utils.emitStateChange(req.io, playlist, "track_deleted");
+
+      transform.playlist(playlist, function (playlist)  {
+        res.json({playlist: playlist});
+      });
+    }).error(function (err) {
+      sendBadRequest(res, err);
+    });
+
+  } else {
+    sendBadRequest(res, "Only admin can delete tracks");
+  }
+});
+
 /* Import a spotify playlist into queueup */
 router.post('/playlists/:playlist/import', function (req, res) {
   // socket.emit(playlist:changed)
