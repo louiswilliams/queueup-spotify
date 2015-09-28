@@ -161,8 +161,7 @@ router.post('/auth/login', function (req, res) {
               email: profile.email,
               loginOrigin: 'api',
               facebook: profile,
-              client_token: client_token,
-              friends: fbfriends
+              client_token: client_token
             }).success( function (user) {
 
               /* Success */
