@@ -20,11 +20,11 @@ var spotifyRouter = require('./routes/spotify');
 var SpotifyWebApi = require('spotify-web-api-node');
 var utils = require('./utils');
 
-var ObjectId = mongo.ObjectID;
-var db = monk('localhost:27017/queueup');
-
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/spotify.key', {encoding: 'utf8'}));
 var envConf = JSON.parse(fs.readFileSync(__dirname + '/env.json', {encoding: 'utf8'}));
+
+var ObjectId = mongo.ObjectID;
+var db = monk('localhost:27017/' + envConf.database);
 
 // Initialize Spotify web api
 var spotify = new SpotifyWebApi({
