@@ -9,10 +9,12 @@ var async = require('async');
 var basicAuth = require('basic-auth');
 var crypto = require('crypto');
 var express = require('express');
+var fs = require('fs');
 var Graph = require('../../graph');
 var monk = require('monk');
 var router = express.Router();
 var utils = require('../../utils');
+var SpotifyWebApi = require('spotify-web-api-node');
 var transform = require('../../query/transform');
 
 var ObjectID = require('mongodb').ObjectID;
@@ -20,6 +22,9 @@ var db = monk('localhost:27017/queueup');
 
 var Playlists = db.get('playlists');
 var Users = db.get('users');
+
+var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../../spotify.key', {encoding: 'utf8'}));
+
 
 /* Initialize an anonymous user with some device information */
 router.post('/auth/init', function (req, res) {
@@ -124,7 +129,7 @@ router.post('/auth/login', function (req, res) {
     /* Use the Graph API to verify the user's data  */
     G.get('/me', function (profile) {
 
-      console.log(profile);
+      // console.log(profile);
 
       /* If a no error from FB*/
       if (!profile.error) {
@@ -270,6 +275,29 @@ router.get('/search/tracks/:query/:offset?', function (req, res) {
   });
 });
 
+router.post('/spotify/users/:spotifyuser/playlists/:offset?', function(req, res) {
+  var offset = (req.params.offset) ? req.params.offset : 0;
+  var user = req.params.spotifyuser;
+  var accessToken = req.body.access_token;
+
+  var spotify = new SpotifyWebApi(spotifyConfig);
+
+  spotify.setAccessToken(accessToken);
+
+  /* Query spotify with an optional offset for pages of results */
+  spotify.getUserPlaylists(user, {limit: 5, offset: offset}).then(function(data) {
+    var response = {};
+    var playlists = data.body.items;
+    console.log("Playlists found for user \"" + user + "\": " +  playlists.length);
+
+    res.json({playlists: playlists});
+  }, function(err) {
+    console.log("Query error: ",err);
+    res.json({error: err});
+  });
+});
+
+
 router.get('/search/playlists/:query', function (req, res) {
 
   /*  Strip anything that isn't alphanumeric or whitespace
@@ -311,6 +339,8 @@ router.get('/search/playlists/:query', function (req, res) {
   });
 });
 
+
+
 /* Get all playlists */
 router.get('/playlists', function (req, res) {
   var playlists = req.db.get('playlists');
@@ -329,27 +359,27 @@ router.get('/playlists/:playlist', function (req, res) {
 });
 
 
-/* Add a track to a playlist */
-router.post('/playlists/:playlist/add', function (req, res) {
-  if (req.body.track_id) {
-    var track_id = req.body.track_id;
-      utils.addTrackToPlaylist(req, track_id, req.playlist, function(err) {
-        if (err) {
-          sendBadRequest(res, err);
-        } else {
-          res.json({message: "Success"});
-        }
-      });
-
-    } else {
-      console.log(req.body);
-      sendBadRequest(res, "No track_id sent");
-    }
-});
-
 /** AUTHENTICATED ROUTES: All routes from now on require an authenticated user **/
 router.use('/', requireAuth);
 
+
+/* Add track to a playlist */
+router.post('/playlists/:playlist/add', function (req, res) {
+
+  if (req.body.track_id) {
+    var track_id = req.body.track_id;
+    utils.addTrackToPlaylist(req, track_id, req.playlist, function(err) {
+      if (err) {
+        sendBadRequest(res, err);
+      } else {
+        res.json({message: "Success"});
+      }
+    });
+  } else {
+    // console.log(req.body);
+    sendBadRequest(res, "No track_id sent");
+  }
+});
 
 /* Create a new playlist */
 router.post('/playlists/new', function (req, res) {
@@ -359,12 +389,29 @@ router.post('/playlists/new', function (req, res) {
 
     var key = playlist.name.replace(/[^\w]/gi,'').toLowerCase();
 
+    var location = (playlist.location ) ? {
+      latitude: playlist.location.latitude,
+      longitude: playlist.location.longitude,
+      altitude: playlist.location.altitude,
+      accuracy: playlist.location.accuracy
+    } : {
+      latitude: null,
+      longitude: null,
+      altitude: null,
+      accuracy: null
+    };
+
+    // if (!location.latitiude || !location.longitude) {
+    //   return sendBadRequest(res, "Location.latitiude and location.longitude must be set");
+    // }
+
     Playlists.insert({
       admin: req.apiUser._id,
       admin_name: req.apiUser.name,
       key: key,
       name: playlist.name,
       playing: false,
+      location: location,
       volume: 50,
       date_created: new Date().getTime(),
       last_updated: new Date().getTime()
@@ -382,6 +429,40 @@ router.post('/playlists/new', function (req, res) {
     sendBadRequest(res, "Playlist and name not given");
   }
 });
+
+
+/* Update a playlist */
+router.post('/playlists/:playlist/update', function (req, res) {
+
+  /* Make sure user is the admin of the playlist */
+  if (req.apiUser._id.equals(req.playlist.admin)) {
+    var update = req.body.playlist;
+
+    if (!update) {
+      return sendBadRequest(res, "playlist field must be set for update")
+    }
+    console.log("Updating: " + update);
+
+    Playlists.findAndModify({
+      _id: req.playlist._id
+    }, {
+      $set: update
+    }, {
+      "new": true
+    }).success(function (playlist) {
+
+      res.json({playlist: playlist});
+    }).error(function (err) {
+
+      sendBadRequest(res, err);
+    });
+
+  } else {
+    sendBadRequest(res, "User is not the admin");
+  }
+
+});
+
 
 /* Rename a playlist */
 router.post('/playlists/:playlist/rename', function (req, res) {
@@ -479,19 +560,23 @@ router.post('/playlists/:playlist/delete/track', function(req, res) {
   var playlists = req.db.get('playlists');
 
   var trackId = req.body.track_id;
-  if (req.apiUser._id.equals(req.playlist.admin)) {
-
-    Playlists.findAndModify({
-      _id: req.playlist._id
-    }, {
-      $pull: {
-        tracks: {
-          _id: new ObjectID(trackId)
-        }
+  Playlists.findAndModify({
+    _id: req.playlist._id,
+    "tracks._id": new ObjectID(trackId),
+    $or: [
+      { "tracks.addedBy._id": req.apiUser._id },
+      { "admin": req.apiUser._id }
+    ]
+  }, {
+    $pull: {
+      tracks: {
+        _id: new ObjectID(trackId)
       }
-    }, {
-      "new": true
-    }).success(function (playlist) {
+    }
+  }, {
+    "new": true
+  }).success(function (playlist) {
+    if (playlist) {
       console.log("Deleted track", trackId, " from ", playlist._id);
 
       utils.emitStateChange(req.io, playlist, "track_deleted");
@@ -499,13 +584,13 @@ router.post('/playlists/:playlist/delete/track', function(req, res) {
       transform.playlist(playlist, function (playlist)  {
         res.json({playlist: playlist});
       });
-    }).error(function (err) {
-      sendBadRequest(res, err);
-    });
-
-  } else {
-    sendBadRequest(res, "Only admin can delete tracks");
-  }
+    } else {
+      console.log("User is not allowed to delete this track...");
+      sendBadRequest(res, "You are not allowed to delete this track");
+    }
+  }).error(function (err) {
+    sendBadRequest(res, err);
+  });
 });
 
 /* Import a spotify playlist into queueup */
@@ -558,7 +643,7 @@ router.post("/users/friends/playlists", function (req, res) {
 
     /* Sequentially find the user's playlists and add it to a list to send back*/
     async.eachSeries(friends, function (friend, callback) {
-        console.log("Friend: ", friend.name);
+        // console.log("Friend: ", friend.name);
         Playlists.find({
           admin: friend._id
         }, {fields: {tracks: 0}}).success(function (playlists) {

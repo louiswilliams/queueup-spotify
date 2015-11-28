@@ -1,4 +1,9 @@
 /* Query layer for playlists */
+var async = require('async');
+var monk = require('monk');
+var db = monk('localhost:27017/queueup');
+
+var Users = db.get('users');
 
 /* State can be an object with other models and data */
 
@@ -25,9 +30,38 @@ exports.playlist = function (playlist, callback) {
       return compareDates(a,b);
     });
   }
+
+  var finalTracks = [];
+
+  async.eachSeries(tracks, function (track, c) {
+    if (!track.played) {
+      if (track.addedBy != null) {
+        Users.findOne({
+          _id: track.addedBy._id
+        }).success(function (user) {
+          track.addedBy.name = user.name;
+          finalTracks.push(track);
+          c();
+        }).error(function (err) {
+          c(err);
+        });
+      } else {
+        finalTracks.push(track);
+        c();
+      }
+    } else {
+      c();
+    }
+  }, function (err) {
+    if (err) {
+      sendBadRequest(res, err);
+    } else {
+      playlist.tracks = finalTracks;
+      callback(playlist);
+    }
+  });
   
-  playlist.tracks = tracks;
-  callback(playlist);
+
 }
 
 function compareDates(a, b) {

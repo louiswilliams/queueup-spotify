@@ -56,17 +56,19 @@ exports.skipTrack = function (playlist, callback) {
 
       /* Store the first track */
       var first = playlist.tracks[0];
-      console.log("Removing: ", first.track.id);
+      console.log("Marking played: ", first.track.id);
 
       /* Remove the first track from the DB, set the current as the stored track */
+      /* Mark the track as played and will not be displayed */
       db.get('playlists').findAndModify({
-        _id: playlist._id
+        _id: playlist._id,
+        "tracks._id": first._id
       }, {
         $set: {
           current: first.track,
-          last_updated: new Date().getTime()
-        },
-        $pull: {tracks: { _id: first._id}}
+          last_updated: new Date().getTime(),
+          "tracks.$.played": true
+        }
       }, {
         "new": true
       }).success(function (playlist) {
@@ -80,6 +82,7 @@ exports.skipTrack = function (playlist, callback) {
       });
 
     } else {
+      /* Reset the entire queue to not being played */
       db.get('playlists').findAndModify({
         _id: playlist._id
       }, {
@@ -125,7 +128,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
   /* First get the track information from Spotify */
 
   var apiUser = req.apiUser;
-  var user = (user) ? {_id: apiUser._id, name: apiUser.name } : null;
+  var user = (apiUser) ? {_id: apiUser._id, name: apiUser.name } : null;
 
   req.spotify.getTrack(trackId).then(function(response) {
     var track = response.body;
@@ -143,7 +146,16 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         req.db.get('playlists').findAndModify(
           {_id: playlist._id},
           {
-            $set: { current: track }
+            $set: { current: track },
+            $push: {
+              tracks: {
+                _id: new ObjectID(),
+                track: track,
+                dateAdded: new Date().getTime(),
+                addedBy: user,
+                played: true
+              }
+            }
           }, { "new": true }
         ).success(function(playlist) {
 
@@ -298,7 +310,7 @@ exports.emitStateChange = function (io, playlist, proj, trigger) {
     trigger = proj;
   }
 
-  console.log("emitting state change: ", playlist);
+  // console.log("emitting state change: ", playlist);
 
   /* Transform with the current state (playlist field is required) */
   transform.playlist(playlist, function (playlist) {
