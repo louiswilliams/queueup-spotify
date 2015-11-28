@@ -1,5 +1,9 @@
 var express = require('express');
+var fs = require('fs');
 var router = express.Router();
+
+var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../spotify.key', {encoding: 'utf8'}));
+
 
 router.get('/search/:query/:offset?', function(req, res) {
   var offset = (req.params.offset) ? req.params.offset : 0;
@@ -26,6 +30,28 @@ router.get('/search/:query/:offset?', function(req, res) {
       response[i] = track;
     }
     res.json(response);
+  }, function(err) {
+    console.log("Query error: ",err);
+    res.json({error: err});
+  });
+});
+
+router.get('/search/:user/playlists/:offset?', function(req, res) {
+  var offset = (req.params.offset) ? req.params.offset : 0;
+  var user = req.params.user;
+  var accessToken = req.body.access_token;
+
+  var spotify = new SpotifyWebApi(spotifyConfig);
+
+  spotify.setAccessToken(accessToken);
+
+  /* Query spotify with an optional offset for pages of results */
+  spotify.getUserPlaylists(user, {limit: 5, offset: offset}).then(function(data) {
+    var response = {};
+    var playlists = data.body.items;
+    console.log("Playlists found for user \"" + user + "\": " +  playlists.length);
+
+    res.json({playlists: playlists});
   }, function(err) {
     console.log("Query error: ",err);
     res.json({error: err});
