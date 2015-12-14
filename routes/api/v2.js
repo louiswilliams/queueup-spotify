@@ -359,7 +359,6 @@ router.post('/playlists/nearby/:offset?', function (req, res) {
         type: "Point",
         coordinates: [location.longitude, location.latitude]
     };
-    console.log("Finding playlists near ", point.coordinates);
     
     req.Playlists.col.aggregate([
       {$geoNear: {
@@ -378,12 +377,14 @@ router.post('/playlists/nearby/:offset?', function (req, res) {
         location: 1,
         current: 1,
         distance: 1
+      }},
+      {$sort: {
+        distance: 1
       }}
     ], function (err, documents) {
       if (err) {
         sendBadRequest(res, err);        
       } else {
-        console.log("nearby:", documents);
         res.json({playlists: documents});
       }
     });
@@ -654,7 +655,10 @@ router.get("/users/:user", function (req, res) {
 router.get("/users/:user/playlists", function (req, res) {
   req.Playlists.find({
     admin: req.user._id
-  }, {fields: {tracks: 0}}).success(function (playlists) {
+  }, {
+    fields: {tracks: 0},
+    sort: {last_updated: -1}
+  }).success(function (playlists) {
 
     res.json({playlists: playlists});
   }).error(function (err) {
@@ -664,33 +668,27 @@ router.get("/users/:user/playlists", function (req, res) {
 
 /* Show a user's Facebook friends' playlists */
 router.post("/users/friends/playlists", function (req, res) {
-  var friendsPlaylists = [];
 
   /* Get the QueueUp ids from the FB ids    */
   req.Users.find({
     'facebook.id': {$in : req.body.fb_ids}
   }).success(function (friends) {
 
-    /* Sequentially find the user's playlists and add it to a list to send back*/
-    async.eachSeries(friends, function (friend, callback) {
-        // console.log("Friend: ", friend.name);
-        req.Playlists.find({
-          admin: friend._id
-        }, {fields: {tracks: 0}}).success(function (playlists) {
-            friendsPlaylists = friendsPlaylists.concat(playlists);
-            callback();
-        }).error(function (err) {
-            callback(err);
-        });
-    }, function (err) {
-        if (err) {
-            sendBadRequest(res, err);
-        } else {
-            console.log("Friend's playlists: ", friendsPlaylists.length);
-            transform.playlists(req, friendsPlaylists, function (list) {
-              res.json({playlists: list});
-            });
-        }
+    var friendIds = [];
+    var i;
+    for (i =0; i < friends.length; i++) {
+      friendIds.push(friends[i]._id);
+    }
+
+    req.Playlists.find({
+      admin: {$in: friendIds}
+    }, {
+      fields: {tracks: 0},
+      sort: { last_updated: -1}
+    }).success(function (playlists) {
+      res.json({playlists: playlists});
+    }).error(function (err) {
+      sendBadRequest(res, err);
     });
 
   }).error(function (err) {

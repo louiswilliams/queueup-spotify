@@ -8,7 +8,7 @@ var db = monk('localhost:27017/queueup');
 exports.playlists = function (req, playlists, callback) {
   
   playlists.sort(function (a, b) {
-    return a.lastUpdated > b.lastUpdated;
+    return b.last_updated > b.last_updated;
   });
   callback(playlists)
 }
