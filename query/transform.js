@@ -10,6 +10,7 @@ exports.playlists = function (req, playlists, callback) {
   playlists.sort(function (a, b) {
     return a.lastUpdated > b.lastUpdated;
   });
+  callback(playlists)
 }
 
 exports.playlist = function (req, playlist, callback) {
