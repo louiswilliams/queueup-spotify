@@ -687,7 +687,9 @@ router.post("/users/friends/playlists", function (req, res) {
             sendBadRequest(res, err);
         } else {
             console.log("Friend's playlists: ", friendsPlaylists.length);
-            res.json({playlists: friendsPlaylists});
+            transform.playlists(req, friendsPlaylists, function (list) {
+              res.json({playlists: list});
+            });
         }
     });
 

@@ -5,6 +5,13 @@ var db = monk('localhost:27017/queueup');
 
 /* State can be an object with other models and data */
 
+exports.playlists = function (req, playlists, callback) {
+  
+  playlists.sort(function (a, b) {
+    return a.lastUpdated > b.lastUpdated;
+  });
+}
+
 exports.playlist = function (req, playlist, callback) {
 
   var Users = req.Users;
