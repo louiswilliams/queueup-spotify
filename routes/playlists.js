@@ -8,7 +8,7 @@ var router = express.Router();
 
 // playlist param
 router.param('playlist', function(req, res, next, id) {
-  var playlists = req.db.get('playlists');
+  var playlists = req.Playlists;
 
   try {
     var pid = ObjectID(id);
@@ -101,7 +101,7 @@ function getPlaylist (req, res, pretty) {
 // Change the playing status of the track (true | false)
 router.post('/:playlist/:name?/play', function(req, res) {
   var play = (req.body.play == "true"); // Toggle play/pause
-  var playlists = req.db.get('playlists');
+  var playlists = req.Playlists;
 
   // Only the administrator can play/pause the track
   // if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
@@ -129,7 +129,7 @@ router.post('/:playlist/:name?/play', function(req, res) {
 // POST /playlist/[playlist]/volume
 // Change the playback volume of the track [0-100]
 router.post('/:playlist/:name?/volume', function(req, res) {
-  var playlists = req.db.get('playlists');
+  var playlists = req.Playlists;
 
   // Only the administrator can play/pause the track
   if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
@@ -203,7 +203,7 @@ router.post('/:playlist/:name?/skip', function(req, res) {
 
 // POST /playlist/:playlist/delete/:id
 router.post('/:playlist/:name?/delete/:id', function(req, res) {
-  var playlists = req.db.get('playlists');
+  var playlists = req.Playlists;
 
   var trackId = req.params.id;
   if (utils.userIsPlaylistAdmin(req.user, req.playlist)) {
@@ -249,7 +249,7 @@ router.post('/:playlist/:name?/vote/:id', function(req, res) {
     return res.json({redirect: "/auth/facebook"});
   }
 
-  var playlists = req.db.get('playlists');
+  var playlists = req.Playlists;
   var trackId = req.params.id;
 
   utils.voteOnTrack(req.user._id, req.playlist._id, trackId, upvote,
@@ -264,7 +264,7 @@ router.post('/:playlist/:name?/vote/:id', function(req, res) {
 });
 
 router.post('/:playlist/:name?/reorder', function(req, res) {
-  var playlists = req.db.get('playlists');
+  var playlists = req.Playlists;
   var tracks = req.playlist.tracks;
   var move = req.body;
 
@@ -313,7 +313,7 @@ router.get('/:playlist/:name?/import', function(req, res) {
       } else {
         // Update the DB access token if it changed
         if (user) {
-          utils.updateUser(req.db, req.user, {
+          utils.updateUser(req, req.user, {
             "spotify.accessToken": user.accessToken,
             "spotify.tokenExpiration": user.tokenExpiration
           });
@@ -346,7 +346,7 @@ router.get('/:playlist/:name?/import/:owner/:id', function(req, res) {
       } else {
         // Update the DB access token if it changed
         if (user) {
-          utils.updateUser(req.db, req.user, {
+          utils.updateUser(req, req.user, {
             "spotify.accessToken": user.accessToken,
             "spotify.tokenExpiration": user.tokenExpiration
           });

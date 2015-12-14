@@ -48,9 +48,9 @@ exports.getUserPlaylistTracks = function (user, playlist, callback) {
   }
 }
 
-exports.skipTrack = function (playlist, callback) {
+exports.skipTrack = function (req, playlist, callback) {
   
-  transform.playlist(playlist, function (playlist) {
+  transform.playlist(req, playlist, function (playlist) {
     /* If there's anything in the queue */
     if (playlist.tracks && playlist.tracks.length > 0) {
 
@@ -60,7 +60,7 @@ exports.skipTrack = function (playlist, callback) {
 
       /* Remove the first track from the DB, set the current as the stored track */
       /* Mark the track as played and will not be displayed */
-      db.get('playlists').findAndModify({
+      req.Playlists.findAndModify({
         _id: playlist._id,
         "tracks._id": first._id
       }, {
@@ -73,7 +73,7 @@ exports.skipTrack = function (playlist, callback) {
         "new": true
       }).success(function (playlist) {
 
-        transform.playlist(playlist, function (transformed) {
+        transform.playlist(req, playlist, function (transformed) {
           callback(playlist);
         });
 
@@ -83,7 +83,7 @@ exports.skipTrack = function (playlist, callback) {
 
     } else {
       /* Reset the entire queue to not being played */
-      db.get('playlists').findAndModify({
+      req.Playlists.findAndModify({
         _id: playlist._id
       }, {
         $set: {current: null}
@@ -91,7 +91,7 @@ exports.skipTrack = function (playlist, callback) {
         "new": true
       }).success(function (playlist) {
 
-        transform.playlist(playlist, function (transformed) {
+        transform.playlist(req, playlist, function (transformed) {
           callback(playlist);
         });
 
@@ -110,8 +110,8 @@ exports.userIsPlaylistAdmin = function (user, playlist) {
   return (user._id.equals(playlist.admin));
 }
 
-exports.updateUser = function (user, update, callback) {
-  db.get('user').update({
+exports.updateUser = function (req, user, update, callback) {
+  req.Users.update({
     _id: user._id
   }, { $set: update }).error(function (err) {
     if (callback) {
@@ -143,7 +143,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
       if (!playlist.current) {
 
         /* Set the current track to the one just added */
-        req.db.get('playlists').findAndModify(
+        req.Playlists.findAndModify(
           {_id: playlist._id},
           {
             $set: { current: track },
@@ -160,7 +160,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         ).success(function(playlist) {
 
           /* playlist found in DB */
-          exports.emitStateChange(req.io, playlist, "add_track");
+          exports.emitStateChange(req, playlist, "add_track");
 
           callback(null, playlist);
 
@@ -173,7 +173,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
 
 
         /* Append the track */
-        req.db.get('playlists').findAndModify(
+        req.Playlists.findAndModify(
           {_id: playlist._id},
           {
             $push: {
@@ -190,7 +190,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
           /* Added successfully */
           console.log("Added track: ", track.id);
 
-          exports.emitStateChange(req.io, playlist, "add_track_queue");
+          exports.emitStateChange(req, playlist, "add_track_queue");
           
           callback(null, playlist);
         }).error(function (err) {
@@ -208,9 +208,11 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
   });
 }
 
-exports.voteOnTrack = function (apiUserId, playlistId, trackId, upvote, success, badRequest, error) {
-  
-  var Playlists = db.get('playlists');
+exports.voteOnTrack = function (req, trackId, upvote, success, badRequest, error) {
+  var apiUserId = req.apiUser._id;
+  var playlistId = req.playlist._id;
+
+  var Playlists = req.Playlists;
 
   /* First get playlist and track where the user is a voter */
   Playlists.findOne({
@@ -303,7 +305,7 @@ exports.voteOnTrack = function (apiUserId, playlistId, trackId, upvote, success,
 
 
 /* Broadcast to every listener in the 'room' */
-exports.emitStateChange = function (io, playlist, proj, trigger) {
+exports.emitStateChange = function (req, playlist, proj, trigger) {
 
   // TODO: IMPLEMENT PROJECTIONS
   if (typeof (proj) == "string") {
@@ -313,10 +315,10 @@ exports.emitStateChange = function (io, playlist, proj, trigger) {
   // console.log("emitting state change: ", playlist);
 
   /* Transform with the current state (playlist field is required) */
-  transform.playlist(playlist, function (playlist) {
+  transform.playlist(req, playlist, function (playlist) {
 
     /* Send update */
-    io.to(playlist._id).emit('state_change', {
+    req.io.to(playlist._id).emit('state_change', {
       play: playlist.play,
       track: playlist.current,
       queue: playlist.tracks,
@@ -328,10 +330,10 @@ exports.emitStateChange = function (io, playlist, proj, trigger) {
 
 
 /* Send to specific client */
-exports.sendStateChange = function (socket, playlist, trigger) {
+exports.sendStateChange = function (req, socket, playlist, trigger) {
 
   /* Transform with state */
-  transform.playlist(playlist, function (playlist) {
+  transform.playlist(req, playlist, function (playlist) {
     /* Send update */
     socket.emit('state_change', {
       play: playlist.play,

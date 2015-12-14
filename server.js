@@ -26,6 +26,11 @@ var envConf = JSON.parse(fs.readFileSync(__dirname + '/env.json', {encoding: 'ut
 var ObjectId = mongo.ObjectID;
 var db = monk('localhost:27017/' + envConf.database);
 
+var Playlists = db.get('playlists');
+var Users = db.get('users');
+
+Playlists.index({location: "2dsphere"});
+
 // Initialize Spotify web api
 var spotify = new SpotifyWebApi({
   clientId: spotifyConfig.clientId,
@@ -46,6 +51,8 @@ app.use(logger('common'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(function(req,res,next) {
   req.db = db;
+  req.Playlists = Playlists;
+  req.Users = Users;
   req.spotify = spotify; // Make the API available to following middleware
   req.io = io;
   next();
@@ -95,10 +102,6 @@ io.use(function (socket, next) {
   next();
 });
 // Handle client connection and authentication
-
-var Playlists = db.get('playlists');
-var Users = db.get('users');
-
 
 io.on('connection', function(socket) {
   console.log("Socket connection...");
@@ -183,7 +186,7 @@ io.on('connection', function(socket) {
         var queue = (playlist.tracks) ? playlist.tracks : [];
         // Send an initial update
 
-        utils.sendStateChange(socket, playlist, "playlist_connect");
+        utils.sendStateChange({Playlists: Playlists}, socket, playlist, "playlist_connect");
 
         socket.on('client_play_pause', function(play_state) {
           if (typeof(play_state) == 'string') {
@@ -199,7 +202,11 @@ io.on('connection', function(socket) {
             {"new": true}
           ).success(function (playlist) {
 
-            utils.emitStateChange(io, playlist, "client_play_pause");
+            utils.emitStateChange({
+              io: io,
+              Playlists: Playlists,
+              Users: Users
+              }, playlist, "client_play_pause");
           }).error(function (err) {
             console.log(err);
           });
@@ -209,7 +216,10 @@ io.on('connection', function(socket) {
         socket.on('track_finished', function() {
           console.log("Track finished... Going to next");
           Playlists.findOne({_id: playlist._id}).success(function (playlist) {
-            utils.skipTrack(playlist, function(result, err) {
+            utils.skipTrack({
+              Users: Users,
+              Playlists: Playlists
+            }, playlist, function(result, err) {
               console.log(result, err);
               // do something?
             });
@@ -300,8 +310,15 @@ function subscribeListen(user, socket) {
 
         /* Get the most recent playlist and skip the track */
         Playlists.findOne({_id: player_subscription}).success(function (playlist) {
-          utils.skipTrack(playlist, function(result, err) {
-            utils.emitStateChange(io, result, "track_finished");
+          utils.skipTrack({
+            Playlists: Playlists,
+            Users: Users
+          }, playlist, function(result, err) {
+            utils.emitStateChange({
+              io: io,
+              Playlists: Playlists,
+              Users: Users
+            }, result, "track_finished");
           });
         }).error(function (err) {
           console.log(err);
@@ -332,7 +349,11 @@ function subscribeListen(user, socket) {
           },
           {"new": true}
         ).success(function (playlist) {
-          utils.emitStateChange(io, playlist, "track_play_pause");
+          utils.emitStateChange({
+            io: io,
+            Playlists: Playlists,
+            Users: Users
+          }, playlist, "track_play_pause");
         }).error(function (err) {
           console.log(err);
         });
@@ -387,7 +408,10 @@ function subscribeListen(user, socket) {
           socket.join(playlist._id);
 
           /* Send an initial state_change event to populate */
-          utils.sendStateChange(socket, playlist, "client_subscribe");
+          utils.sendStateChange({
+            Playlists: Playlists,
+            Users: Users
+          }, socket, playlist, "client_subscribe");
         }
       });
 

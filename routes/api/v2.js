@@ -18,10 +18,6 @@ var SpotifyWebApi = require('spotify-web-api-node');
 var transform = require('../../query/transform');
 
 var ObjectID = require('mongodb').ObjectID;
-var db = monk('localhost:27017/queueup');
-
-var Playlists = db.get('playlists');
-var Users = db.get('users');
 
 var spotifyConfig = JSON.parse(fs.readFileSync(__dirname + '/../../spotify.key', {encoding: 'utf8'}));
 
@@ -33,7 +29,7 @@ router.post('/auth/init', function (req, res) {
   /* Pre-generate the client_token */
   var client_token = genClientToken(req.body);
 
-  Users.findAndModify({
+  req.Users.findAndModify({
     device: device,
     facebook: { $exists: false },
     email: { $exists: false}
@@ -65,7 +61,7 @@ router.post('/auth/register', function (req, res) {
   if (email && password && name) {
 
     /* Check if user exists already */
-    Users.findOne({
+    req.Users.findOne({
       email: email
     }).success(function (user) {
       if (user) {
@@ -80,7 +76,7 @@ router.post('/auth/register', function (req, res) {
         if (user_id) {
 
           /* Create the user if it doesn't already exist */
-          Users.findAndModify({
+          req.Users.findAndModify({
             _id: user_id,
             client_token: sent_client_token
           }, {$set: {
@@ -135,7 +131,7 @@ router.post('/auth/login', function (req, res) {
       if (!profile.error) {
 
         /* We want to regenerate the token at every login request */
-        Users.findOne({
+        req.Users.findOne({
           "facebook.id": profile.id
         }).success(function (user) {
 
@@ -143,7 +139,7 @@ router.post('/auth/login', function (req, res) {
           if (user) {
             /* In system without a token */
             console.log("User is in db. Handing out new token");
-            Users.update({
+            req.Users.update({
               _id: user._id
             }, {
               $set: {
@@ -161,7 +157,7 @@ router.post('/auth/login', function (req, res) {
             console.log("new user token", client_token);
 
             /* Insert record */
-            Users.insert({
+            req.Users.insert({
               name: profile.name,
               email: profile.email,
               loginOrigin: 'api',
@@ -191,7 +187,7 @@ router.post('/auth/login', function (req, res) {
     var hash = crypto.createHash('md5').update(password).digest('hex');
 
     /* Get the user, then verify the hash */
-    Users.findAndModify({
+    req.Users.findAndModify({
       email: email,
       password: hash
     }, { $set: {
@@ -226,13 +222,13 @@ router.param('playlist', function(req, res, next, id) {
     return sendBadRequest(res, "Bad object ID");
   }
 
-  Playlists.findOne({_id: playlist_id},{}, function(err, playlist) {
+  req.Playlists.findOne({_id: playlist_id},{}, function(err, playlist) {
     if (err){
       sendBadRequest(res, "Find playlist Error: " + err);
     }
     if (playlist) {
 
-      transform.playlist(playlist, function (playlist) {
+      transform.playlist(req, playlist, function (playlist) {
         req.playlist = playlist;
         return next();
       });
@@ -246,7 +242,7 @@ router.param('playlist', function(req, res, next, id) {
 /* User_id parameter */
 router.param('user', function(req, res, next, id) {
 
-  Users.findOne({_id: id},{}, function(err, user) {
+  req.Users.findOne({_id: id},{}, function(err, user) {
     if (err){
       sendBadRequest(res, "Find user Error: " + err);
     } else if (user) {
@@ -315,7 +311,7 @@ router.get('/search/playlists/:query', function (req, res) {
   var playlists = [];
 
   /* Search using the regex and return the simplified results*/
-  Playlists.find({
+  req.Playlists.find({
     $or: [
         {'name': query_regex},
         {'admin_name': query_regex}
@@ -343,15 +339,60 @@ router.get('/search/playlists/:query', function (req, res) {
 
 /* Get all playlists */
 router.get('/playlists', function (req, res) {
-  var playlists = req.db.get('playlists');
 
-  playlists.find({},{sort: {"last_updated": -1}, fields: {tracks: 0}}).success(function (documents) {
+  req.Playlists.find({},{sort: {"last_updated": -1}, fields: {tracks: 0}}).success(function (documents) {
     res.json({playlists: documents});
   }).error(function (err) {
     sendBadRequest(res, err);
   });
 
 });
+
+router.post('/playlists/nearby/:offset?', function (req, res) {
+
+  var location = req.body.location;
+  var offset = (req.params.offset) ? req.params.offset : 20;
+  var max = 2.0 * 1609.34; // 2 mi in meters
+
+  if (location.latitude && location.longitude) {
+    var point = {
+        type: "Point",
+        coordinates: [location.longitude, location.latitude]
+    };
+    console.log("Finding playlists near ", point.coordinates);
+    
+    req.Playlists.col.aggregate([
+      {$geoNear: {
+        distanceField: "distance",
+        spherical: true,
+        near: point,
+        maxDistance: max
+      }},
+      /* Aggregate $project only allows for inclusion, not exclusion... */
+      {$project: {
+        admin: 1,
+        admin_name: 1,
+        key: 1,
+        name: 1, 
+        play: 1,
+        location: 1,
+        current: 1,
+        distance: 1
+      }}
+    ], function (err, documents) {
+      if (err) {
+        sendBadRequest(res, err);        
+      } else {
+        console.log("nearby:", documents);
+        res.json({playlists: documents});
+      }
+    });
+  } else {
+    sendBadRequest(res, "location.latitude and location.longitude required");
+  }
+
+});
+
 
 /* Get a playlist's info */
 router.get('/playlists/:playlist', function (req, res) {
@@ -390,22 +431,11 @@ router.post('/playlists/new', function (req, res) {
     var key = playlist.name.replace(/[^\w]/gi,'').toLowerCase();
 
     var location = (playlist.location ) ? {
-      latitude: playlist.location.latitude,
-      longitude: playlist.location.longitude,
-      altitude: playlist.location.altitude,
-      accuracy: playlist.location.accuracy
-    } : {
-      latitude: null,
-      longitude: null,
-      altitude: null,
-      accuracy: null
-    };
+      type: "Point",
+      coordinates: [playlist.location.longitude, playlist.location.latitude]
+    } : null;
 
-    // if (!location.latitiude || !location.longitude) {
-    //   return sendBadRequest(res, "Location.latitiude and location.longitude must be set");
-    // }
-
-    Playlists.insert({
+    req.Playlists.insert({
       admin: req.apiUser._id,
       admin_name: req.apiUser.name,
       key: key,
@@ -443,7 +473,7 @@ router.post('/playlists/:playlist/update', function (req, res) {
     }
     console.log("Updating: " + update);
 
-    Playlists.findAndModify({
+    req.Playlists.findAndModify({
       _id: req.playlist._id
     }, {
       $set: update
@@ -475,9 +505,9 @@ router.post('/playlists/:playlist/rename', function (req, res) {
 
     /* If the name is set, make the update */
     if (newName) {
-      var key = req.playlist.name.replace(/[^\w]/gi,'').toLowerCase();
+      var key = req.playlist.name.replace(/[^\w]/gi,'').toLowerCase();req.
 
-      Playlists.findAndModify({
+      req.Playlists.findAndModify({
         _id: req.playlist._id
       }, {
         $set: {
@@ -511,7 +541,7 @@ router.post('/playlists/:playlist/delete', function (req, res) {
   /* Make sure user is the admin of the playlist */
   if (req.apiUser._id.equals(req.playlist.admin)) {
 
-    Playlists.remove({
+    req.Playlists.remove({
       _id: req.playlist._id
     }).success(function (count) {
 
@@ -539,12 +569,12 @@ router.post('/playlists/:playlist/vote', function (req, res) {
   var trackId = req.body.track_id;
   var upvote = req.body.vote;
 
-  utils.voteOnTrack(req.apiUser._id, req.playlist._id, trackId, upvote,
+  utils.voteOnTrack(req, trackId, upvote,
     function (playlist) {
 
-      utils.emitStateChange(req.io, playlist, "vote");
+      utils.emitStateChange(req, playlist, "vote");
 
-      transform.playlist(playlist, function (playlist) {
+      transform.playlist(req, playlist, function (playlist) {
         res.json({playlist: playlist});
       });
   }, function (message) {
@@ -557,10 +587,10 @@ router.post('/playlists/:playlist/vote', function (req, res) {
 
 /* Delete a track from a playlist */
 router.post('/playlists/:playlist/delete/track', function(req, res) {
-  var playlists = req.db.get('playlists');
+  var playlists = req.Playlists;
 
   var trackId = req.body.track_id;
-  Playlists.findAndModify({
+  req.Playlists.findAndModify({
     _id: req.playlist._id,
     "tracks._id": new ObjectID(trackId),
     $or: [
@@ -579,9 +609,9 @@ router.post('/playlists/:playlist/delete/track', function(req, res) {
     if (playlist) {
       console.log("Deleted track", trackId, " from ", playlist._id);
 
-      utils.emitStateChange(req.io, playlist, "track_deleted");
+      utils.emitStateChange(req, playlist, "track_deleted");
 
-      transform.playlist(playlist, function (playlist)  {
+      transform.playlist(req, playlist, function (playlist)  {
         res.json({playlist: playlist});
       });
     } else {
@@ -622,7 +652,7 @@ router.get("/users/:user", function (req, res) {
 
 /* Show a user's playlists */
 router.get("/users/:user/playlists", function (req, res) {
-  Playlists.find({
+  req.Playlists.find({
     admin: req.user._id
   }, {fields: {tracks: 0}}).success(function (playlists) {
 
@@ -637,14 +667,14 @@ router.post("/users/friends/playlists", function (req, res) {
   var friendsPlaylists = [];
 
   /* Get the QueueUp ids from the FB ids    */
-  Users.find({
+  req.Users.find({
     'facebook.id': {$in : req.body.fb_ids}
   }).success(function (friends) {
 
     /* Sequentially find the user's playlists and add it to a list to send back*/
     async.eachSeries(friends, function (friend, callback) {
         // console.log("Friend: ", friend.name);
-        Playlists.find({
+        req.Playlists.find({
           admin: friend._id
         }, {fields: {tracks: 0}}).success(function (playlists) {
             friendsPlaylists = friendsPlaylists.concat(playlists);
@@ -722,7 +752,7 @@ function apiAuthenticate (req, res, next) {
 
   /* user_id must be sent to get the key */
   if (user_id) {
-    Users.findOne({
+    req.Users.findOne({
       _id: user_id
     }).success(function (user) {
 

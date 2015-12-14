@@ -3,12 +3,11 @@ var async = require('async');
 var monk = require('monk');
 var db = monk('localhost:27017/queueup');
 
-var Users = db.get('users');
-
 /* State can be an object with other models and data */
 
-exports.playlist = function (playlist, callback) {
+exports.playlist = function (req, playlist, callback) {
 
+  var Users = req.Users;
   if (!playlist) {
     return callback(playlist);
   }
