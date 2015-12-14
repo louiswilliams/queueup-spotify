@@ -37,7 +37,11 @@ A QueueUp *Player* is requried to stream from QueueUp. This repository is for th
 
 The `/spotify.key` configuration file is required to run the server  properly. An example configuration file is located in `/spotify.key.example`. Most of the requried parameters can be obtained by creating Spotify Developer account, and then a [Spotify Application](https://developer.spotify.com/my-applications). The `encryptionSecret` is your password to encrypt refresh tokens on the server side.
 
-The `/env.json` configuration file is required with three fields, *name* (environment), *host* (current hostname, like queueup.louiswilliams.org), and  *port* (server listen port)
+The `/env.json` configuration file is required (env.json.example is provided)with the fields:
+  - *name* (environment)
+  - *host* (current hostname, like queueup.louiswilliams.org)
+  - *port* (server listen port)
+  - *database* (name of MongoDB database to use)
 
 A MongoDB Server should be running on `localhost:27017`. This is configurable in `server.js`.
 
@@ -165,6 +169,9 @@ The appropriate headers are then:
     - **Returns**: `{playlists: [Playlist]}`: Array of *Playlist* objects (without tracks).
 - GET `/api/v2/playlists/:playlist_id`: Get details for a playlist, by `_id`.
     - **Returns**: `{playlist: Playlist}`: A *Playlist* object. 
+- POST `/api/v2/playlists/nearby`: Show playlists within 2.0 mi radius
+    - **Input**: `{location: {latitude: Double, longitude: Double}}`: Coordinates of the user creating the playlist
+    - **Returns**: `{playlist: Playlist}`: New *Playlist* object. This object contains the `distance` field, which is equal to the distance to the playlist in meters.
 - POST `/api/v2/playlists/new`: Create new playlist
     - **Input**: `{playlist: {name: String}}`: New playlist object (with name)
     - **Returns**: `{playlist: Playlist}`: New *Playlist* object.
@@ -260,6 +267,7 @@ Objects
     -  `date_created` *Number*: Date created (UNIX)
     -  `last_updated` *Number*: Date last updated (UNIX)
     -  `key` *String*: Non-unique short name for the playlist
+    -  `distance` *Double*: If a location was sent to `/playlists/nearby`, this field exists and is the distance in meters to the playlist 
 
 - *User*: User object that stores basic  information
     - `_id`: *String*: Internal ID. 
@@ -277,7 +285,7 @@ Objects
 
 - *Track*: Simplified version of [Spotify's Track (full)](https://developer.spotify.com/web-api/object-model/#track-object-full).
     -  `votes` *Number*: Number of votes on the track
-    -  `voters` *[User]*: Array of *User* objects, with only the *_id* parameter
+    -  `voters` *[User]*: Array of *User* objects, with *_id* and *name*parameters
     -  `name` *String*: Track name
     -  `id` *String*: Spotify ID
     -  `uri` *String*: Spotify URI
