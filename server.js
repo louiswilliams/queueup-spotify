@@ -186,7 +186,10 @@ io.on('connection', function(socket) {
         var queue = (playlist.tracks) ? playlist.tracks : [];
         // Send an initial update
 
-        utils.sendStateChange({Playlists: Playlists}, socket, playlist, "playlist_connect");
+        utils.sendStateChange({
+          Playlists: Playlists,
+          Users: Users
+        }, socket, playlist, "playlist_connect");
 
         socket.on('client_play_pause', function(play_state) {
           if (typeof(play_state) == 'string') {

@@ -21,7 +21,7 @@ router.param('playlist', function(req, res, next, id) {
        return next(new Error("Find playlist Error: " + err));
     }
     if (playlist) {
-      transform.playlist(playlist, function (p) {
+      transform.playlist(req, playlist, function (p) {
         req.playlist = p;
         return next();
       });
@@ -115,7 +115,7 @@ router.post('/:playlist/:name?/play', function(req, res) {
          console.log("Updated play to " + play);
          // Update socket playlists
 
-        utils.emitStateChange(req.io, playlist, "play");
+        utils.emitStateChange(req, playlist, "play");
 
         // Send current state back
         res.json({play: play});
@@ -147,7 +147,7 @@ router.post('/:playlist/:name?/volume', function(req, res) {
        console.log("Updated volume to ", volume);
        
        // Update socket playlists
-       utils.emitStateChange(req.io, req.playlist, "volume");
+       utils.emitStateChange(req, req.playlist, "volume");
 
        // Send current state back
        res.json({volume: volume});
@@ -189,7 +189,7 @@ router.post('/:playlist/:name?/skip', function(req, res) {
       if (playlist) {
         /* Broadcast the change */
 
-        utils.emitStateChange(req.io, playlist, "next_track");
+        utils.emitStateChange(req, playlist, "next_track");
 
         res.json({message: "Skipped track"});
       } else {
@@ -221,7 +221,7 @@ router.post('/:playlist/:name?/delete/:id', function(req, res) {
     }).success(function (playlist) {
       console.log(playlist);
 
-      utils.emitStateChange(req.io, playlist, "track_deleted");
+      utils.emitStateChange(req, playlist, "track_deleted");
 
       res.json({message: "Deleted successfully"});
     }).error(function (err) {
@@ -254,7 +254,7 @@ router.post('/:playlist/:name?/vote/:id', function(req, res) {
 
   utils.voteOnTrack(req.user._id, req.playlist._id, trackId, upvote,
     function (playlist) {
-      utils.emitStateChange(req.io, playlist, "vote_on_track");
+      utils.emitStateChange(req, playlist, "vote_on_track");
       res.json({message: "Voted"})
     }, function (message) {
       res.json({error: message});
@@ -287,7 +287,7 @@ router.post('/:playlist/:name?/reorder', function(req, res) {
       "new": true
     }).success(function (playlist) {
 
-      utils.emitStateChange(req.io, playlist, "queue_reordered");
+      utils.emitStateChange(req, playlist, "queue_reordered");
 
       res.json({message: "Reordered successfully"});
 
