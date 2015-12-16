@@ -74,31 +74,42 @@ exports.skipTrack = function (req, playlist, callback) {
       }).success(function (playlist) {
 
         transform.playlist(req, playlist, function (transformed) {
-          callback(playlist);
-        });
-
-      }).error(function (err) {
-        callback(null, {error: err});
-      });
-
-    } else {
-      /* Reset the entire queue to not being played */
-      req.Playlists.findAndModify({
-        _id: playlist._id
-      }, {
-        $set: {current: null}
-      }, {
-        "new": true
-      }).success(function (playlist) {
-
-        transform.playlist(req, playlist, function (transformed) {
-          callback(playlist);
+          callback(transformed);
         });
 
       }).error(function (err) {
         callback(null, err);
       });
 
+    } else {
+      /* Reset the entire queue to not being played */
+      console.log("Playlist done: Resetting playlist to initial state");
+      req.Playlists.findOne({
+        _id: playlist._id
+      }).success(function (p) {
+        p.tracks.forEach(function (track) {
+          track.played = false;
+        });
+
+        req.Playlists.findAndModify({
+          _id: playlist._id
+        }, {
+          $set: {
+            current: null,
+            tracks: p.tracks
+          }
+        }, {
+          "new": true,
+        }).success(function (playlist) {
+
+          exports.skipTrack(req, playlist, callback);
+
+        }).error(function (err) {
+          callback(null, err);
+        });
+      }).error(function (err) {
+        callback(null, err);
+      }); 
     }
   });
 }
@@ -138,10 +149,9 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
 
     /* track should be defined if Spotify found a valid track */
     if (track) {
-
-      /* If there isn't a current track, don't put this in the queue */
+      
+      /* If there isn't a current track, set this as the current, and mark as played so we can recover it later */
       if (!playlist.current) {
-
         /* Set the current track to the one just added */
         req.Playlists.findAndModify(
           {_id: playlist._id},
@@ -161,18 +171,13 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
 
           /* playlist found in DB */
           exports.emitStateChange(req, playlist, "add_track");
-
           callback(null, playlist);
-
         }).error(function (err) {
-          req.json({error: err});
+          callback(err);
         });
-
-      /* Add the track to the end of the queue */
       } else {
 
-
-        /* Append the track */
+        /* Add the track to the end of the queue */
         req.Playlists.findAndModify(
           {_id: playlist._id},
           {
@@ -194,6 +199,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
           
           callback(null, playlist);
         }).error(function (err) {
+          callback(err);
           console.log(err);
         });
       }
