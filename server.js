@@ -450,7 +450,8 @@ function subscribeListen(user, socket) {
         } else {
           Playlists.update({_id: playlist._id}, {
             $set: {
-              player: user._id
+              player: user._id,
+              play: true
             }
           }, {"new": true}).success(function (playlist) {
 
