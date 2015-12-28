@@ -281,7 +281,7 @@ router.post('/spotify/users/:spotifyuser/playlists/:offset?', function(req, res)
   spotify.setAccessToken(accessToken);
 
   /* Query spotify with an optional offset for pages of results */
-  spotify.getUserPlaylists(user, {limit: 5, offset: offset}).then(function(data) {
+  spotify.getUserPlaylists(user, {limit: 10, offset: offset}).then(function(data) {
     var response = {};
     var playlists = data.body.items;
     console.log("Playlists found for user \"" + user + "\": " +  playlists.length);
@@ -410,16 +410,44 @@ router.post('/playlists/:playlist/add', function (req, res) {
 
   if (req.body.track_id) {
     var track_id = req.body.track_id;
-    utils.addTrackToPlaylist(req, track_id, req.playlist, function(err) {
+    utils.addTrackToPlaylist(req, track_id, req.playlist, function(err, playlist) {
       if (err) {
         sendBadRequest(res, err);
       } else {
+        utils.emitStateChange(req, playlist, "add_track");
         res.json({message: "Success"});
       }
     });
   } else {
     // console.log(req.body);
     sendBadRequest(res, "No track_id sent");
+  }
+});
+
+/* Add multiple tracks to a playlist */
+router.post('/playlists/:playlist/add_multiple', function (req, res) {
+
+  if (req.body.tracks) {
+    var playlist = req.playlist;
+    async.eachSeries(req.body.tracks, function (item, callback) {
+      utils.addTrackToPlaylist(req, item, playlist, function (err, p) {
+        if (err) {
+          callback(err);
+        } else {
+          playlist = p;
+          callback();
+        }
+      });
+    }, function (err) {
+      if (err) {
+        sendBadRequest(res, err);
+      } else {
+        utils.emitStateChange(req, playlist, "add_track_multiple");
+        res.json({playlist: playlist});
+      }
+    });
+  } else {
+    sendBadRequest(res, "No tracks sent");
   }
 });
 
@@ -436,6 +464,7 @@ router.post('/playlists/new', function (req, res) {
       coordinates: [playlist.location.longitude, playlist.location.latitude]
     } : null;
 
+    console.log("Creating playlist at", playlist.location);
     req.Playlists.insert({
       admin: req.apiUser._id,
       admin_name: req.apiUser.name,
@@ -462,17 +491,26 @@ router.post('/playlists/new', function (req, res) {
 });
 
 
-/* Update a playlist */
-router.post('/playlists/:playlist/update', function (req, res) {
+/* Relocate a playlist */
+router.post('/playlists/:playlist/relocate', function (req, res) {
 
   /* Make sure user is the admin of the playlist */
   if (req.apiUser._id.equals(req.playlist.admin)) {
-    var update = req.body.playlist;
+    var location = req.body.location;
 
-    if (!update) {
-      return sendBadRequest(res, "playlist field must be set for update")
+    if (!location) {
+      return sendBadRequest(res, "Location field not set");
+    }
+    if (!location.longitude || !location.latitude) {
+      return sendBadRequest(res, "location.latitude and location.longitude fields must be set");
     }
     console.log("Updating: " + update);
+
+    var update = {};
+    update.location = {
+      type: "Point",
+      coordinates: [location.longitude, location.latitude]
+    };
 
     req.Playlists.findAndModify({
       _id: req.playlist._id
@@ -481,10 +519,9 @@ router.post('/playlists/:playlist/update', function (req, res) {
     }, {
       "new": true
     }).success(function (playlist) {
-
+      console.log("Playlist", playlist._id, "relocated to", location);
       res.json({playlist: playlist});
     }).error(function (err) {
-
       sendBadRequest(res, err);
     });
 
@@ -534,6 +571,27 @@ router.post('/playlists/:playlist/rename', function (req, res) {
   }
 
 });
+
+/* Reset a playlist */
+router.post('/playlists/:playlist/reset', function (req, res) {
+
+  /* Make sure user is the admin of the playlist */
+  if (req.apiUser._id.equals(req.playlist.admin)) {
+
+    utils.resetPlaylist(req, req.playlist, function (playlist, err) {
+      if (playlist) {
+        res.json({playlist: playlist});
+      } else {
+        sendBadRequest(res, err);
+      }
+    });
+
+  } else {
+    sendBadRequest(res, "User is not the admin");
+  }
+
+});
+
 
 
 /* Delete a playlist */

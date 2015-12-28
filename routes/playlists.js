@@ -387,7 +387,7 @@ router.get('/:playlist/:name?/import/:owner/:id', function(req, res) {
               if (err) {
                 res.end(err);
               }
-            })
+            });
           });
           
           res.redirect('/playlist/' + req.playlist._id + '/' + req.playlist.key);

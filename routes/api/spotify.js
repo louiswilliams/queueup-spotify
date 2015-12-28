@@ -21,14 +21,6 @@ var ENCRYPTION_SECRET = spotifyConfig.encryptionSecret;
 
 var authHeader = CLIENT_ID + ":" + CLIENT_SECRET;
 
-var requestOptions = {
-    host: SPOTIFY_ENDPOINT.host,
-    method: 'POST',
-    path: SPOTIFY_ENDPOINT.path,
-    auth: authHeader,
-    headers: {}
-};
-
 /* Get access tokens given an auth code */
 router.post('/swap', function (req, res) {
 
@@ -47,6 +39,14 @@ router.post('/swap', function (req, res) {
   });
 
   /* Set the content type and length headers */
+  var requestOptions = {
+    host: SPOTIFY_ENDPOINT.host,
+    method: 'POST',
+    path: SPOTIFY_ENDPOINT.path,
+    auth: authHeader,
+    headers: {}
+  };
+
   requestOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';
   requestOptions.headers['Content-Length'] = Buffer.byteLength(data);
 
@@ -84,6 +84,15 @@ router.post('/refresh', function (req, res) {
     grant_type: "refresh_token",
     refresh_token: decryptToken(refreshToken)
   });
+
+
+  var requestOptions = {
+    host: SPOTIFY_ENDPOINT.host,
+    method: 'POST',
+    path: SPOTIFY_ENDPOINT.path,
+    auth: authHeader,
+    headers: {}
+  };
 
   /* Set the content type and length headers */
   requestOptions.headers['Content-Type'] = 'application/x-www-form-urlencoded';

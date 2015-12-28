@@ -66,6 +66,7 @@ exports.skipTrack = function (req, playlist, callback) {
       }, {
         $set: {
           current: first.track,
+          current_addedBy: first.addedBy,
           last_updated: new Date().getTime(),
           "tracks.$.played": true
         }
@@ -83,36 +84,43 @@ exports.skipTrack = function (req, playlist, callback) {
 
     } else {
       /* Reset the entire queue to not being played */
-      console.log("Playlist done: Resetting playlist to initial state");
-      req.Playlists.findOne({
-        _id: playlist._id
-      }).success(function (p) {
-        p.tracks.forEach(function (track) {
-          track.played = false;
-        });
-
-        req.Playlists.findAndModify({
-          _id: playlist._id
-        }, {
-          $set: {
-            current: null,
-            tracks: p.tracks
-          }
-        }, {
-          "new": true,
-        }).success(function (playlist) {
-
-          exports.skipTrack(req, playlist, callback);
-
-        }).error(function (err) {
-          callback(null, err);
-        });
-      }).error(function (err) {
-        callback(null, err);
-      }); 
+      exports.resetPlaylist(req, playlist, callback); 
     }
   });
 }
+
+exports.resetPlaylist = function (req, playlist, callback) {
+  console.log("Resetting playlist to initial state");
+  
+  req.Playlists.findOne({
+    _id: playlist._id
+  }).success(function (p) {
+    p.tracks.forEach(function (track) {
+      track.played = false;
+    });
+
+    req.Playlists.findAndModify({
+      _id: playlist._id
+    }, {
+      $set: {
+        current: null,
+        tracks: p.tracks
+      }
+    }, {
+      "new": true,
+    }).success(function (playlist) {
+      /* Moves the first track to current */
+      exports.skipTrack(req, playlist, callback);
+
+    }).error(function (err) {
+      callback(null, err);
+    });
+  }).error(function (err) {
+    callback(null, err);
+  }); 
+
+}
+
 
 exports.userIsPlaylistAdmin = function (user, playlist) {
   if (!user || !playlist) {
@@ -156,7 +164,10 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         req.Playlists.findAndModify(
           {_id: playlist._id},
           {
-            $set: { current: track },
+            $set: { 
+              current: track,
+              current_addedBy: user
+            },
             $push: {
               tracks: {
                 _id: new ObjectID(),
@@ -170,7 +181,6 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         ).success(function(playlist) {
 
           /* playlist found in DB */
-          exports.emitStateChange(req, playlist, "add_track");
           callback(null, playlist);
         }).error(function (err) {
           callback(err);
@@ -193,10 +203,7 @@ exports.addTrackToPlaylist = function (req, trackId, playlist, callback) {
         ).success(function (playlist) {
         
           /* Added successfully */
-          console.log("Added track: ", track.id);
-
-          exports.emitStateChange(req, playlist, "add_track_queue");
-          
+          console.log("Added track: ", track.id);          
           callback(null, playlist);
         }).error(function (err) {
           callback(err);
