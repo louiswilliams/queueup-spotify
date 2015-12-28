@@ -724,6 +724,24 @@ router.get("/users/:user/playlists", function (req, res) {
   });
 });
 
+router.post("/users/:user/name", function (req, res) {
+  if (req.body.name) {
+    req.Users.findAndModify({
+      _id: req.user._id
+    }, {
+      $set: {
+        name: req.body.name
+      }
+    }, {"new": true}).success(function (user) {
+      res.json({user: user});
+    }).error(function (err) {
+      sendBadRequest(res, err);
+    });
+  } else {
+    sendBadRequest(res, "No name sent");    
+  }
+});
+
 /* Show a user's Facebook friends' playlists */
 router.post("/users/friends/playlists", function (req, res) {
 
