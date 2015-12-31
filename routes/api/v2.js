@@ -543,7 +543,7 @@ router.post('/playlists/:playlist/rename', function (req, res) {
 
     /* If the name is set, make the update */
     if (newName) {
-      var key = req.playlist.name.replace(/[^\w]/gi,'').toLowerCase();req.
+      var key = req.playlist.name.replace(/[^\w]/gi,'').toLowerCase();
 
       req.Playlists.findAndModify({
         _id: req.playlist._id
