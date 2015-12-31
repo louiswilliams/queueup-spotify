@@ -820,7 +820,7 @@ function apiAuthenticate (req, res, next) {
   }
 
   if (Math.abs(curDate - reqDate) > MAX_DIFF) {
-    return sendBadRequest(res, "Request is out of window");
+    return sendBadRequest(res, "User time is out of sync with server");
   }
 
   var user_id = auth.name;
