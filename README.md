@@ -3,14 +3,16 @@ QueueUp Server
 
 QueueUp is a collaborative playlist streaming service. Anybody can create a playlist, use Spotify to stream from QueueUp, and invite friends to contribute in real time.
 
-A QueueUp *Player* is requried to stream from QueueUp. This repository is for the QueueUp *Server*. Read below about *Players*.
+[**Get it on Google Play**](https://play.google.com/store/apps/details?id=org.louiswilliams.queueupplayer)
 
-### Live site [queueup.io](http://queueup.io/)
+[**Get it on the App Store**](https://itunes.apple.com/us/app/queueup-player/id1028056241?mt=8)
 
+A QueueUp *Player* is requried to stream from QueueUp. This repository is for the QueueUp *Server*. Read below about the Android and iOS *Players*.
+
+### [Live Site](http://queueup.io/)
 
 ![Playlist](public/images/screen1small.png)
 ![Playlist](public/images/screen3small.png)
-
 
 ## Contents
 
@@ -58,9 +60,9 @@ A QueueUp Player is required to play from [QueueUp](http://qup.louiswilliams.org
 
 Available Players:
 
-  - [Android Player](https://github.com/extrakt/queueup-player-android): An ready-to-run AndroidStudio project.
+  - [Android Player](https://play.google.com/store/apps/details?id=org.louiswilliams.queueupplayer): Get it on the Google Play Store
+  - [iOS](https://itunes.apple.com/us/app/queueup-player/id1028056241?mt=8): Get it on the iOS App store
   - [Node.js Player](https://github.com/extrakt/queueup-spotify-client): Requires some setup, but effectively the same as the Android player, just on a desktop platform.
-  - [iOS](https://github.com/reynoldsjay/queueup-player-ios): XCode project with iPhone player.
 
 Notes:
 
