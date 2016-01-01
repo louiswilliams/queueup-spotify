@@ -97,6 +97,8 @@ exports.resetPlaylist = function (req, playlist, callback) {
   }).success(function (p) {
     p.tracks.forEach(function (track) {
       track.played = false;
+      track.votes = 0;
+      track.voters = [];
     });
 
     req.Playlists.findAndModify({
